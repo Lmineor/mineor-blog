@@ -1,148 +1,88 @@
 ---
-title: "docker网络模式"
+title: "docker网络"
 date: 2022-10-19
 draft: false
 tags : [                    # 文章所属标签
-    "docker",
+    "docker","容器与虚拟化",
 ]
 categories : [              # 文章所属标签
     "技术",
 ]
 ---
 
-# Bridge模式
 
-当`Docker`进程启动时，会在主机上创建一个名为`docker0`的虚拟网桥，此主机上启动的`Docker`容器会连接到这个虚拟网桥上。虚拟网桥的工作方式和物理交换机类似，这样主机上的所有容器就通过交换机连在了一个二层网络中。从`docker0`子网中分配一个 IP 给容器使用，并设置 docker0 的 IP 地址为容器的**默认网关**。在主机上创建一对虚拟网卡`veth pair`设备，Docker 将 veth pair 设备的一端放在新创建的容器中，并命名为`eth0`（容器的网卡），另一端放在主机中，以`vethxxx`这样类似的名字命名，并将这个网络设备加入到 docker0 网桥中。可以通过`brctl show`命令查看。
+容器中可以运行一些网络应用，要让外部也可以访问这些应用，可以通过`-P`或`-p`参数来指定端口映射。
 
-`bridge`模式是 docker 的默认网络模式，不写`–net`参数，就是`bridge`模式。使用`docker run -p`时，docker 实际是在`iptables`做了`DNAT`规则，实现端口转发功能。可以使用`iptables -t nat -vnL`查看。`bridge`模式如下图所示：
+当使用`-P`标记时，Docker会随机映射一个端口到内部容器开放的网络端口。
 
-![bridge 模式](https://www.mineor.xyz/images/20221023/docker-bridge.png)
-
-演示：
-演示：
+使用`docker container ls` 可以看到，本地主机的32768被映射到了容器的80端口。此时访问本机的32768端口即可访问容器内nginx的默认页面。
 
 ```bash
-$ docker run -tid --net=bridge --name docker_bri1 \\
-             ubuntu-base:v3
-             docker run -tid --net=bridge --name docker_bri2 \\
-             ubuntu-base:v3 
+$ docker run -d -P nginx:alpine
 
-$ brctl show
-$ docker exec -ti docker_bri1 /bin/bash
-$ ifconfig –a
-$ route –n
+$ docker container ls -l
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                   NAMES
+fae320d08268        nginx:alpine        "/docker-entrypoint.…"   24 seconds ago      Up 20 seconds       0.0.0.0:32768->80/tcp   bold_mcnulty
 ```
 
-如果你之前有 Docker 使用经验，你可能已经习惯了使用`--link`参数来使容器互联。
-
-随着 Docker 网络的完善，强烈建议大家将容器加入自定义的 Docker 网络来连接多个容器，而不是使用 --link 参数。
-
-下面先创建一个新的 Docker 网络。
+同样的，可以通过`docker logs`命令来查看访问记录。
 
 ```bash
-$ docker network create -d bridge my-net
+$ docker logs fa
+172.17.0.1 - - [25/Aug/2020:08:34:04 +0000] "GET / HTTP/1.1" 200 612 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:80.0) Gecko/20100101 Firefox/80.0" "-"
 ```
 
-`-d`参数指定 Docker 网络类型，有 `bridge overlay`。其中 overlay 网络类型用于 Swarm mode，在本小节中你可以忽略它。
+`-p` 则可以指定要映射的端口，并且，在一个指定端口上只可以绑定一个容器。支持的格式有`ip:hostPort:containerPort | ip::containerPort | hostPort:containerPort`
 
-运行一个容器并连接到新建的 my-net 网络
+# 映射所有接口地址
+
+使用`hostPort:containerPort` 格式将本地的80端口映射到容器的80端口，可以执行
 
 ```bash
-$ docker run -it --rm --name busybox1 --network my-net busybox sh
+$ docker run -d -p 80:80 nginx:alpine
 ```
 
-打开新的终端，再运行一个容器并加入到 my-net 网络
+# 映射到指定地址的指定端口
+
+可以使用`ip:hostPort:containerPort` 格式指定映射使用一个特定地址，比如localhost地址127.0.0.1
 
 ```bash
-$ docker run -it --rm --name busybox2 --network my-net busybox sh
+$ docker run -d -p 127.0.0.1:80:80 nginx:alpine
 ```
 
-再打开一个新的终端查看容器信息
+# 映射到指定地址的任意端口
+
+使用`ip::containerPort` 绑定localhost的任意端口到容器的80端口，本地主机会自动分配一个端口
 
 ```bash
-$ docker container ls
-
-CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
-b47060aca56b        busybox             "sh"                11 minutes ago      Up 11 minutes                           busybox2
-8720575823ec        busybox             "sh"                16 minutes ago      Up 16 minutes                           busybox1
+$ docker run -d -p 127.0.0.1::80 nginx:alpine
 ```
 
-下面通过 ping 来证明 busybox1 容器和 busybox2 容器建立了互联关系。 在 busybox1 容器输入以下命令
+还可以使用`udp`标记来指定`udp`端口。
 
 ```bash
-/ # ping busybox2
-PING busybox2 (172.19.0.3): 56 data bytes
-64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.072 ms
-64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.118 ms
+$ docker run -d -p 127.0.0.1:80:80/udp nginx:alpine
 ```
 
-用 ping 来测试连接 busybox2 容器，它会解析成 172.19.0.3。 同理在 busybox2 容器执行 ping busybox1，也会成功连接到。
+# 查看映射端口配置
+
+使用`docker port` 来查看当前映射的端口配置，也可以查看绑定的地址
 
 ```bash
-/ # ping busybox1
-PING busybox1 (172.19.0.2): 56 data bytes
-64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.064 ms
-64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.143 ms
+$ docker port fa 80
+0.0.0.0:32768
 ```
 
-这样，busybox1 容器和 busybox2 容器建立了互联关系。
+注意：
 
-如果你有多个容器之间需要互相连接，推荐使用`Docker Compose`。
+-   容器有自己的内部网络和ip地址（`docker inspect`查看，docker还可以有一个可变的网络配置。）
+-   `-p` 标记可以多次使用来绑定多个端口
 
-## **Host 模式**
-
-如果启动容器的时候使用`host`模式，那么这个容器将不会获得一个独立的`Network Namespace`，而是和宿主机共用一个 Network Namespace。容器将不会虚拟出自己的网卡，配置自己的 IP 等，而是使用宿主机的 IP 和端口。但是，容器的其他方面，如文件系统、进程列表等还是和宿主机隔离的。 Host模式如下图所示：
-
-![https://www.qikqiak.com/k8s-book/docs/images/docker-network-host.jpeg](https://www.qikqiak.com/k8s-book/docs/images/docker-network-host.jpeg)
-
-演示：
+例如
 
 ```bash
-$ docker run -tid --net=host --name docker_host1 ubuntu-base:v3
-$ docker run -tid --net=host --name docker_host2 ubuntu-base:v3
-
-$ docker exec -ti docker_host1 /bin/bash
-$ docker exec -ti docker_host1 /bin/bash
-
-$ ifconfig –a
-$ route –n
+$ docker run -d \\
+    -p 80:80 \\
+    -p 443:443 \\
+    nginx:alpine
 ```
-
-## **Container 模式**
-
-这个模式指定新创建的容器和已经存在的一个容器共享一个 Network Namespace，而不是和宿主机共享。新创建的容器不会创建自己的网卡，配置自己的 IP，而是和一个指定的容器共享 IP、端口范围等。同样，两个容器除了网络方面，其他的如文件系统、进程列表等还是隔离的。两个容器的进程可以通过 lo 网卡设备通信。 Container模式示意图：
-
-![https://www.qikqiak.com/k8s-book/docs/images/docker-network-container.jpeg](https://www.qikqiak.com/k8s-book/docs/images/docker-network-container.jpeg)
-
-演示：
-
-```bash
-$ docker run -tid --net=container:docker_bri1 \\
-              --name docker_con1 ubuntu-base:v3
-
-$ docker exec -ti docker_con1 /bin/bash
-$ docker exec -ti docker_bri1 /bin/bash
-
-$ ifconfig –a
-$ route -n
-```
-
-## **None模式**
-
-使用`none`模式，Docker 容器拥有自己的 Network Namespace，但是，并不为Docker 容器进行任何网络配置。也就是说，这个 Docker 容器没有网卡、IP、路由等信息。需要我们自己为 Docker 容器添加网卡、配置 IP 等。 None模式示意图:
-
-![https://www.qikqiak.com/k8s-book/docs/images/docker-network-none.jpeg](https://www.qikqiak.com/k8s-book/docs/images/docker-network-none.jpeg)
-
-演示：
-
-```bash
-$ docker run -tid --net=none --name \\
-                docker_non1 ubuntu-base:v3
-
-$ docker exec -ti docker_non1 /bin/bash
-
-$ ifconfig –a
-$ route -n
-```
-
-Docker 的跨主机通信我们这里就先暂时不讲解，我们在后面的`Kubernetes`课程当中会用到。

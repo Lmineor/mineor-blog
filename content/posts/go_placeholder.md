@@ -3,10 +3,11 @@ title: "Go语言的%d,%p,%v等占位符的使用"
 date: 2022-10-19
 draft: false
 tags : [                    # 文章所属标签
-    "占位符",
+    "go",
 ]
 categories : [              # 文章所属标签
-    "go",
+    "技术",
+]o",
 ]
 
 ---
