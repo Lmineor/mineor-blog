@@ -20,7 +20,7 @@ Raft把consensus算法分解为3个独立的子问题：
 
 `leader`, `follower`, `candidate`，一般来说，只有一个leader，其余都是follower。
 
-![图4](./img/raft_status.png)
+![图4](https://www.mineor.xyz/images/20221023/raft_status.png)
 
 图4：各节点的状态。
 
@@ -29,7 +29,7 @@ Raft把consensus算法分解为3个独立的子问题：
 `Leader`：会一直工作到失败。其接受所有客户的请求，
 
 ## 1.3 任期term
-![term](./img/raft_term.png)
+![term](https://www.mineor.xyz/images/20221023/raft_term.png)
 图5:任期
 
 ## 1.4 简明总结
@@ -158,7 +158,7 @@ Raft用心跳机制来出发leader选举。当节点启动时其身份为followe
 Raft用了随机的选举过期时间（例如150-300ms）来确保很少的几率发生平票并且就算发生了也会很快被解决。
 ## 2.3 Log 复制
 
-![log](./img/raft_log.png)
+![log](https://www.mineor.xyz/images/20221023/raft_log.png)
 
 图6：一个小格子代表一个log entry，格子上面的数字表示任期，下面的表示command。
 
