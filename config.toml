@@ -12,7 +12,7 @@ disablePathToLower = true
 hasCJKLanguage = true
 summaryLength = 140
 
-disqusShortname = "yourdiscussshortname"  ## 是否开启disqus评论，不要和utteranc同时开启
+disqusShortname = "lex"  ## 是否开启disqus评论，不要和utteranc同时开启
 
 [author]
   name = "lex"
@@ -21,7 +21,7 @@ disqusShortname = "yourdiscussshortname"  ## 是否开启disqus评论，不要�
   author = "lex"
   subtitle = "让梦想照进现实"
   keywords = "golang,go语言,go语言笔记,python,软件架构"
-  description = "专注于IT互联网，包括但不限于Go语言(golang)、Python等"
+  description = "???我是谁???"
   busuanzi = true #启用不算子网页统计
   googleAd = ""  #ca-pub-xxxxxxxxxxxxxx
   localSearch = true # 启用本地搜索
@@ -36,6 +36,10 @@ disqusShortname = "yourdiscussshortname"  ## 是否开启disqus评论，不要�
   toc = true  # 是否开启目录
 
 ## 友情链接，可以多个
+[[params.links]]
+  title = "GitHub"
+  name = "作者的GitHub"
+  url = "https://github.com/Lmineor"
 
 [[params.links]]
   title = "飞雪无情的博客"
