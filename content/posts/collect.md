@@ -1,7 +1,7 @@
 ---
 title: "收藏??就叫收藏吧"
 date: 2022-11-08
-draft: true
+draft: false
 tags : [                    # 文章所属标签
     "collection",
 ]
