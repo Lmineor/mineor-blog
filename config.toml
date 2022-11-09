@@ -34,7 +34,7 @@ disqusShortname = "lex"  ## 是否开启disqus评论，不要和utteranc同时�
 
   # 全局开关，你也可以在每一篇内容的 front matter 中针对单篇内容关闭或开启某些功能
   toc = true  # 是否开启目录
-  
+
   beian = "豫ICP备20008675号"
 
   
@@ -71,9 +71,9 @@ disqusShortname = "lex"  ## 是否开启disqus评论，不要和utteranc同时�
   theme = "github-light"
 ## 配置 waline 评论系统,教程参考 https://waline.js.org/
 [params.waline]
-  enable = false
+  enable = true
   placeholder = "说点什么吧..."
-  serverURL = "Your waline serverURL" #换成你的serverURL
+  serverURL = "https://waline.mineor.xyz/" #换成你的serverURL
 ## 开启版权声明，协议名字和链接都可以换
 [params.cc]
     name = "知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议"
