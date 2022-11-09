@@ -34,7 +34,10 @@ disqusShortname = "lex"  ## 是否开启disqus评论，不要和utteranc同时�
 
   # 全局开关，你也可以在每一篇内容的 front matter 中针对单篇内容关闭或开启某些功能
   toc = true  # 是否开启目录
+  
+  beian = "豫ICP备20008675号"
 
+  
 ## 友情链接，可以多个
 [[params.links]]
   title = "GitHub"
