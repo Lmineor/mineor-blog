@@ -1,6 +1,6 @@
 ---
 title: "gorm删除记录（删除具有级联关系的数据）"
-date: 2022-11-19
+date: 2022-11-18
 draft: false
 tags : [                    # 文章所属标签
     "Go",
