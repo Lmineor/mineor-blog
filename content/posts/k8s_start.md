@@ -110,6 +110,7 @@ k8s里的三种IP：
 - 在k8s集群内，Node IP网、Pod IP网与Cluster IP网之间的通信，采用的是k8s自己设计的特殊的路由规则。
 
 外部用户访问Service可以采用NodePort的方式，以tomcat-service为例，yaml描述如下：
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -129,5 +130,6 @@ selector:
 NodePort实现的方式是在k8s集群里的每个Node为需要外部访问的Service开启一个对应的TCP监听端口。
 
 但NodePort还没有完全解决外部访问Service的问题，比如负载均衡问题。此时外部网络秩序访问此负载均衡器的IP地址，由负载均衡器负责转发后面某个Node的NodePort上，如下图所示：
+
 ![NodePort与LB](https://www.mineor.xyz/images/20221120/node_port_lb.png)
 
