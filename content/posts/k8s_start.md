@@ -1,7 +1,7 @@
 ---
 title: "《k8s权威指南学习》--入门篇"
 date: 2022-11-10
-draft: true
+draft: false
 tags : [                    # 文章所属标签
     "k8s",
 ]
@@ -90,3 +90,44 @@ Label通常在资源对象定义时确定，也可以在对象创建后动态添
 
 通过给指定的资源对象捆绑一个或多个不同的Label来实现多维度的资源分组管理功能，以便于灵活、方便地进行资源分配、调度、配置、部署等管理工作。
 随后可以通过Label Selector查询和筛选拥有某些Label资源对象。
+
+# service
+
+k8s里的三种IP：
+
+- Node IP： Node节点的IP地址
+- Pod IP： Pod的IP地址
+- Cluster IP：Service的IP地址。
+
+首先Node IP是k8s集群中每个节点的无力网卡的IP地址，这是一个真实存在的物理网络，所有属于这个网络的服务器之间都能通过这个网络直接通信，不管他们中是否有部分节点不属于这个k8s集群。 这也表明了k8s集群之外的节点访问k8s集群之内的某个节点或者TCP/IP服务时，必须通过Node IP进行通信。
+
+其次，Pod IP是每个Pod的IP地址，它是Docker Engine根据docker0网桥的IP地址段进行分配的，通常是一个虚拟的二层网络。k8s里一个Pod的容器访问另一个Pod里的容器，就是通过Pod IP所在的虚拟二层网络进行通信的，而真实的TCP/IP流量则是通过Node IP所在的无力网卡流出的。
+
+最后，Service的Cluster IP，它也是一个虚拟的IP，但更像是一个“伪造”的IP地址，原因是：
+- Cluster IP仅仅作用于k8s Service这个对象，并由k8s管理和分配IP地址（来源于Cluster IP地址池）；
+- Cluster IP无法被ping，因为没有一个“实体网络对象”来响应。
+- Cluster IP只能结合Service Port组成一个具体的通信端口，单独的Cluster IP不具备TCP/IP通信的基础，并且他们属于k8s集群这样一个封闭的空间，集群外的节点如果想要访问这个通信端口，需要做一些额外的工作。
+- 在k8s集群内，Node IP网、Pod IP网与Cluster IP网之间的通信，采用的是k8s自己设计的特殊的路由规则。
+
+外部用户访问Service可以采用NodePort的方式，以tomcat-service为例，yaml描述如下：
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+	name: tomcat-service
+spec:
+	type: NodePort
+ports:
+	-port: 8080
+nodePort: 31002
+selector:
+	tier: frontend
+```
+
+即可通过http://<NodeIP>:31003访问Tomcat服务了。
+
+NodePort实现的方式是在k8s集群里的每个Node为需要外部访问的Service开启一个对应的TCP监听端口。
+
+但NodePort还没有完全解决外部访问Service的问题，比如负载均衡问题。此时外部网络秩序访问此负载均衡器的IP地址，由负载均衡器负责转发后面某个Node的NodePort上，如下图所示：
+![NodePort与LB]!(https://www.mineor.xyz/images/20221120/node_port_lb.png)
+
