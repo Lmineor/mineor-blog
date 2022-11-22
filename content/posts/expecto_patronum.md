@@ -1,7 +1,7 @@
 ---
 title: "Expecto Patronum"
 date: 2020-10-26
-draft: true
+draft: false
 ---
 
 The day that you wrote *That letter* is 2020 10 26
