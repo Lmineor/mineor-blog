@@ -1,7 +1,7 @@
 ---
 title: "linux自动化交互工具：expect示例"
-date: 2022-10-19
-draft: true
+date: 2022-11-28
+draft: false
 tags : [                    # 文章所属标签
     "Linux",
 ]
