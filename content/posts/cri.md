@@ -34,7 +34,7 @@ kubelet回通过gRPC调用CRI接口，首先去创建一个环境，也就是所
 
 ## PodSandbox
 
-从虚拟机和容器化两方面看，两者懂事有了[cgroups](./cgroup.md)做资源配额，而且概念上都抽离出一个隔离的运行时环境，只是区别在于资源隔离的实现。
+从虚拟机和容器化两方面看，两者懂事有了[cgroups](../cgroup.md)做资源配额，而且概念上都抽离出一个隔离的运行时环境，只是区别在于资源隔离的实现。
 因此sandbox是k8s为兼容不同运行时环境所预留的空间，也就是说k8s允许low-level runtime依据不同的实现去创建不同的podsandbox，对于kata来说podsandbox就是虚拟机，对于docker来说就是linxe namespace。
 当pod sandbox建立起来后，kubelet就可以在里面创建用户容器。当删除pod时，kubelet会先移除pod sandbox然后再停止里面的所有容器，对于container来说，当sandbox运行后，只需将新的container的namespace加入到已有的sandbox的 namespace中。
 
