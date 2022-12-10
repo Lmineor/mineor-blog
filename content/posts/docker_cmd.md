@@ -38,3 +38,6 @@ docker ps -a --format "{{.ID}}\t{{.Status}}" | grep Ex | awk '{print$1}' | xargs
 ```bash
 docker images --format "{{.Repository}}\t{{.ID}}" | grep none | awk '{print $2}' | xargs docker rmi
 ```
+
+
+https://blog.csdn.net/aiwangtingyun/article/details/123380626
