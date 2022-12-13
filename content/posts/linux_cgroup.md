@@ -83,3 +83,6 @@ dr-xr-xr-x 5 root root  0 Oct 23 06:38 pids # 限制任务数量
 dr-xr-xr-x 3 root root  0 Oct 23 06:38 rdma
 dr-xr-xr-x 6 root root  0 Oct 23 06:38 systemd
 ```
+
+
+**这篇文章好强，可以抽空研究复现下：https://www.cnblogs.com/zhrx/p/16388175.html**
