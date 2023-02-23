@@ -47,6 +47,7 @@ Raft解决的办法是，在选主逻辑中，对能够成为主的节点加以�
 图4：各节点的状态。
 
 
+
 `Followers`：只响应来自其他节点的请求【只对Leader和Candidate做出响应】，如果没有收到其他节点的信息，则会变成Candidate并且初始化一个**选举过程**。若该节点收到了客户端的请求，则会重定向至leader节点。
 `Candidate`：用来选举新的Leader。如果收到大多数节点的投票，则会变成Leader。
 `Leader`：会一直工作到失败。其接受所有客户的请求，当Leader发现自己的任期ID比其他节点的任期ID小时，自动放弃Leader的位置，转为Follower
