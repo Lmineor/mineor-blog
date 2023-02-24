@@ -3,7 +3,23 @@ title: "Raft"
 date: 2023-02-23
 draft: false
 ---
-# Raft共识算法
+
+# 可理解的共识算法研究(In Search of an Understandable Consensus Algorithm--Extended Version)
+
+作者:Diego Ongaro and John Ousterhout--Stanford University
+
+# 摘要
+
+Raft是管理复制日志的共识算法, 比Paxos牛.
+
+# 1 介绍
+
+复制状态机,如图1
+
+![图1](https://www.mineor.xyz/images/raft/replicated_state_machine_architecture.png)
+
+共识算法管理
+
 
 > https://developer.aliyun.com/article/11035?spm=a2c6h.13813017.content3.1.1c04323dv3RDy1
 
@@ -11,15 +27,15 @@ draft: false
 
 ## Raft把共识算法分解为3个独立的子问题：
 
-### 1. Leader选举
+### Leader选举
 
 当前Leader挂掉后必须进入一个新Leader的选举
 
-### 2. 日志复制
+### 日志复制
 
 Leader接收从客户端来的日志并给其他节点复制，并保证其他节点同意。
 
-### 3. 安全性
+### 安全性
 
 选主以及日志复制并不能保证节点间数据一致。试想，当一个某个节点挂掉了，一段时间后再次重启，并当选为主节点。而在其挂掉这段时间内，集群若有超过半数节点存活，集群会正常工作，那么会有日志提交。这些提交的日志无法传递给挂掉的节点。当挂掉的节点再次当选主节点，它将缺失部分已提交的日志。在这样场景下，按Raft协议，它将自己日志复制给其他节点，会将集群已经提交的日志给覆盖掉。
 
