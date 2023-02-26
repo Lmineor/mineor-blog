@@ -35,6 +35,7 @@ Go信号通知机制可以通过往一个channel中发送os.Signal实现。
 Linux 使用34-64信号用作实时系统中。命令 man signal 提供了官方的信号介绍。在POSIX.1-1990标准中定义的信号列表
 
 需要特别说明的是，SIGKILL和SIGSTOP这两个信号既不能被应用程序捕获，也不能被操作系统阻塞或忽略。
+
 ```go
 // main.go
 
