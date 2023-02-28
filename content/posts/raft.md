@@ -144,6 +144,8 @@ MTBF：节点两个崩溃时间之间值的平均值。即节点某次崩溃与�
 集群配置通过特殊的log来进行变更。如图11，当Leader得到通知需要从C(old)配置状态更改为C(new)配置状态，它会将集群新C(old)配置状态保存起来（通过log）。一旦一个节点添加了C(new)集群配置信息到log中，那么今后它便会使用这个C(new)配置信息，不管该log是否被提交。这也就意味着Leader在C(old、new)配置提交后会同时使用C(old、new)配置。但如果这时候Leader崩溃了，新选中的Leader可以从C(old)和C(old、new)配置来进行选择，当然这取决于这个被选中的Leader是否已经拿到了C(old、new)配置信息。
 在任何情况下，C(new)配置都不会单方面的做出决定。
 
+一旦C(old、new)被提交,C(old)和C(new)做任何决定都需要其他节点的同意, Leader Completeness Property(LCP属性)确保只有拥有C(old、new)配置的节点才能被选举为Leader.
+
 
 ### 1.4.2 state
 #### 持久状态【所有节点】
