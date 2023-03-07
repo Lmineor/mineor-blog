@@ -1,5 +1,5 @@
 ---
-title: "ascii码表"
+title: "ASCII码表"
 date: 2023-02-23
 draft: false
 tags : [                    # 文章所属标签
