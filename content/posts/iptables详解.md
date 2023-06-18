@@ -31,7 +31,7 @@ iptables是采用数据包过滤机制工作的，所以它会对请求的数据
 
 ## iptables四表五链
 
-![四表五链](http://99.0.85.123/images/4table5chain.png)
+![四表五链](https://www.mineor.xyz/images/20230618/4table5chain.png)
 
 规则链包括(也称为5个钩子函数(hook functions)):
 - INPUT链:处理输入数据包
@@ -44,19 +44,19 @@ iptables是采用数据包过滤机制工作的，所以它会对请求的数据
 
 filter表
 
-![filter](http://99.0.85.123/images/filter.png)
+![filter](https://www.mineor.xyz/images/20230618/filter.png)
 
 
 nat表
 
-![nat](http://99.0.85.123/images/nat.png)
+![nat](https://www.mineor.xyz/images/20230618/nat.png)
 
 # iptables工作原理
 
-![工作牌原理](http://99.0.85.123/images/work.png)
+![工作牌原理](https://www.mineor.xyz/images/20230618/work.png)
 
 如图
-![工作原理2](http://99.0.85.123/images/work2.png)
+![工作原理2](https://www.mineor.xyz/images/20230618/work2.png)
 
 
 ## 防火墙策略
