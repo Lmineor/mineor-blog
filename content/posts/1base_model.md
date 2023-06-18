@@ -9,7 +9,8 @@ tags : [                    # 文章所属标签
     "Linux",
     "k8s",
     "Cloud",
-    "SDN"
+    "SDN",
+    "数据库"
 ]
 categories : [              # 文章所属标签
     "技术",
