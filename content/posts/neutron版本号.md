@@ -1,16 +1,9 @@
 ---
-title: "文章名称"
+title: "获取neutron版本号"
 date: 2023-06-18
-draft: true
+draft: false
 tags : [                    # 文章所属标签
-    "Docker",
-    "Go", 
-    "Python",
-    "Linux",
-    "k8s",
-    "Cloud",
     "SDN",
-    "数据库",
     "OpenStack"
 ]
 categories : [              # 文章所属标签
@@ -20,3 +13,7 @@ categories : [              # 文章所属标签
     "阅读",
 ]
 ---
+
+```bash
+python -c  "import neutron.version;print(neutron.version.version_info)" 
+```
