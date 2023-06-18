@@ -1,5 +1,5 @@
 ---
-title: "文章名称"
+title: "查看POD的IP地址"
 date: 2023-06-18
 draft: false
 tags : [                    # 文章所属标签
