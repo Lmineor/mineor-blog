@@ -11,7 +11,8 @@ tags : [                    # 文章所属标签
     "Cloud",
     "SDN",
     "数据库",
-    "OpenStack"
+    "OpenStack",
+    "Git"
 ]
 categories : [              # 文章所属标签
     "技术",
