@@ -17,6 +17,6 @@ Create the keystone database:
 MariaDB [(none)]> CREATE DATABASE keystone;
 Grant proper access to the keystone database:
 
-MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'KEYSTONE_DBPASS';
-MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'KEYSTONE_DBPASS';
+GRANT ALL PRIVILEGES ON yong.* TO 'yong'@'localhost' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON yong.* TO 'yong'@'%' IDENTIFIED BY '123456';
 ```
