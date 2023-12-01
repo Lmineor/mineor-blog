@@ -2,7 +2,7 @@
 title: "linux日志轮转"
 date: 2023-12-01
 draft: false
-tags : [                    # 文章所属标签
+tags : [
     "Linux",
 ]
 categories : [              # 文章所属标签
