@@ -1,11 +1,11 @@
 ---
 title: "主机通过dhcp获取ip的过程"
-date: 2023-12-6
+date: 2023-12-06
 draft: false
-tags : [                    # 文章所属标签
+tags : [
     "Linux",
 ]
-categories : [              # 文章所属标签
+categories : [
     "技术",
 ]
 ---
