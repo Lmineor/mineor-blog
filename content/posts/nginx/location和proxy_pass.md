@@ -1,3 +1,20 @@
+---
+title: "proxy_pass的末尾带不带/的作用"
+date: 2024-06-30
+draft: true
+tags : [                    # 文章所属标签
+    "Docker",
+    "Go", 
+    "nginx",
+]
+categories : [              # 文章所属标签
+    "技术",
+]
+---
+
+
+
+
 在 Nginx 的 proxy_pass 指令中，末尾的斜线（/）对代理行为有重要的影响。这主要涉及到请求 URI 的处理方式。
 
 # 末尾不带斜线
