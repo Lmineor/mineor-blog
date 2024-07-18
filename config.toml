@@ -50,10 +50,10 @@ disqusShortname = ""  ## 是否开启disqus评论，不要和utteranc同时开�
   url = "https://www.flysnow.org/"
 
 ## 侧边栏广告位
-#[[params.ads]]
-#  title = "【2019双12】ALL IN CLoud 低至1折"
-#  url = "https://www.aliyun.com/minisite/goods?userCode=jdg9oj97&share_source=copy_link"
-#  img = "https://img.alicdn.com/tfs/TB1_rYHo7P2gK0jSZPxXXacQpXa-690-388.jpg"
+[[params.ads]]
+  title = "阿里云“99计划”，新老同享，低价长效，助力开发者普惠上云！"
+  url = "https://www.aliyun.com/daily-act/ecs/activity_selection?userCode=dq5wjmpz"
+  img = "https://img.alicdn.com/imgextra/i1/O1CN01JOLCyL1MysL7GoLbX_!!6000000001504-2-tps-638-244.png"
 #[[params.ads]]
 #  title = "助力产业智慧升级，云服务器首年88元起，更有千元代金券礼包免费领！"
 #  url = "https://cloud.tencent.com/act/cps/redirect?redirect=1048&cps_key=14ff722692ac784fa8c3301c8c28d924&from=console"
