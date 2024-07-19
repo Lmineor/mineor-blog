@@ -22,7 +22,7 @@ categories : [              # 文章所属标签
 
 参考图:
 
-![Description](https://www.mineor.xyz/images/20230618/linux_struct.png)
+![Description](https://blog.mineor.xyz/images/20230618/linux_struct.png)
 
 linux的运行空间=内核空间+用户空间
 
@@ -56,7 +56,7 @@ linux的运行空间=内核空间+用户空间
 
 操作系统提供给用户程序调用系统服务(硬件设备)的一组"特殊"的接口.
 
-![Description](https://www.mineor.xyz/images/20230618/sys_call.png)
+![Description](https://blog.mineor.xyz/images/20230618/sys_call.png)
 
 ## 为什么要设置系统调用
 
@@ -77,7 +77,7 @@ linux的运行空间=内核空间+用户空间
 
 内核维护系统调用表,保存系统调用函数的起始地址,系统调用号对应系统调用在调用表中的偏移量.
 
-![Description](https://www.mineor.xyz/images/20230618/sys_call_table.png)
+![Description](https://blog.mineor.xyz/images/20230618/sys_call_table.png)
 
 # 如何切换
 

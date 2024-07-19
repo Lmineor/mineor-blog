@@ -39,7 +39,7 @@ categories : [              # 文章所属标签
 
 组成图:
 
-![错误码](https://www.mineor.xyz/images/20221108/errcode.png)
+![错误码](https://blog.mineor.xyz/images/20221108/errcode.png)
 
 ## 面向外部传递的错误码
 
@@ -50,11 +50,11 @@ categories : [              # 文章所属标签
 可以让前端通过错误码给出用户准确的错误提示或者忽略错误进行重试。
 
 组成图:
-![组成图](https://www.mineor.xyz/images/20221108/errcode5.png)
+![组成图](https://blog.mineor.xyz/images/20221108/errcode5.png)
 
 
 示例:
-![示例](https://www.mineor.xyz/images/20221108/errcode_example.png)
+![示例](https://blog.mineor.xyz/images/20221108/errcode_example.png)
 
 
 参考文章:[错误码如何设计才合理？](https://mp.weixin.qq.com/s/4B8PDPHuzaTO2nR6LULSiQ)

@@ -42,7 +42,7 @@ iptables 相关概念
 
 一个数据包到达时,是怎么依次穿过各个链和表的（图）。
 
-![iptables](https://www.mineor.xyz/images/20230219/iptables.png)
+![iptables](https://blog.mineor.xyz/images/20230219/iptables.png)
 
 基本步骤如下：
 

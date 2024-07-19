@@ -2,17 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://www.mineor.xyz/</loc>
+    <loc>https://blog.mineor.xyz/</loc>
     <lastmod>2021-11-06T20:16:13+08:00</lastmod>
   </url><url>
-    <loc>https://www.mineor.xyz/posts/</loc>
+    <loc>https://blog.mineor.xyz/posts/</loc>
     <lastmod>2021-11-06T20:16:13+08:00</lastmod>
   </url><url>
-    <loc>https://www.mineor.xyz/posts/my-first-post/</loc>
+    <loc>https://blog.mineor.xyz/posts/my-first-post/</loc>
     <lastmod>2021-11-06T20:16:13+08:00</lastmod>
   </url><url>
-    <loc>https://www.mineor.xyz/categories/</loc>
+    <loc>https://blog.mineor.xyz/categories/</loc>
   </url><url>
-    <loc>https://www.mineor.xyz/tags/</loc>
+    <loc>https://blog.mineor.xyz/tags/</loc>
   </url>
 </urlset>

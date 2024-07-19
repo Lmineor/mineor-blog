@@ -30,7 +30,7 @@ categories : [              # 文章所属标签
 
 # qemu与kvm的关系如下
 
-![Description](https://www.mineor.xyz/images/20230618/qemuandkvm.png)
+![Description](https://blog.mineor.xyz/images/20230618/qemuandkvm.png)
 
 - kvm在物理机启动时创建/dev/kvm设备文件,当创建虚拟机时,kvm为该虚拟机进程创建一个vm的文件描述符,当创建vCPU时,kvm为每个vCPU创建一个文件描述符.
 - 同时,kvm向用户空间提供了一系列针对特殊设备文件的ioctl系统调用.qemu主要通过ioctl系统调用与kvm进行交互的. 

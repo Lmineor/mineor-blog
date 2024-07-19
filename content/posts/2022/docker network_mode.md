@@ -16,7 +16,7 @@ categories : [              # 文章所属标签
 
 `bridge`模式是 docker 的默认网络模式，不写`–net`参数，就是`bridge`模式。使用`docker run -p`时，docker 实际是在`iptables`做了`DNAT`规则，实现端口转发功能。可以使用`iptables -t nat -vnL`查看。`bridge`模式如下图所示：
 
-![bridge 模式](https://www.mineor.xyz/images/20221023/docker-bridge.png)
+![bridge 模式](https://blog.mineor.xyz/images/20221023/docker-bridge.png)
 
 演示：
 演示：

@@ -109,7 +109,7 @@ GM调度模型：
 - M：工作线程(OS thread)也被称为 Machine，使用 struct runtime.m，所有 M 是有线程栈的。M 的默认数量限制是 10000（来源），可以通过debug.SetMaxThreads修改。
 
 
-![gm](https://www.mineor.xyz/images/20231112/gm.jpg)
+![gm](https://blog.mineor.xyz/images/20231112/gm.jpg)
 
 运行时刚启动时会启动一些G,其中一个负责垃圾回收，其中一个负责调度，其中一个负责用户的入口函数。一开始运行时只有一个M被创建，随后，用户层面的更多G被创建，然后更多的M被创建出来执行更多的G。同时最多同时支持GOMAXPROCS个活跃的线程。
 
@@ -139,7 +139,7 @@ GOMAXPROCS用来控制P的个数，同时P作为M执行G代码时的必需资源
 
 新的P结构会带走原来的M和SCHED结构中的一些属性，比如MCache从M移到了P，而G队列也被分成两类，SCHED结构保留全局G队列，同时每个P中都会有一个本地的G队列。
 
-![newGmp](https://www.mineor.xyz/images/20231112/newGmp.jpg)
+![newGmp](https://blog.mineor.xyz/images/20231112/newGmp.jpg)
 
 P的本地队列可以解决旧调度器中单一全局锁的问题。注意P的本地G队列还是可能面临一个并发访问的场景，比如下面讲到的窃取算法。为了避免加锁，这里P的本地队列是一个LockFree的队列，窃取G时使用CAS原子操作来完成。关于LockFree和CAS的知识参见[Lock-Free](https://yizhi.ren/2017/09/19/reorder/)。
 

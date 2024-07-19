@@ -1,4 +1,4 @@
-baseURL = "https://www.mineor.xyz"
+baseURL = "https://blog.mineor.xyz"
 languageCode = "zh-CN"
 title = "mineor"
 theme = "maupassant"

@@ -131,5 +131,5 @@ NodePort实现的方式是在k8s集群里的每个Node为需要外部访问的Se
 
 但NodePort还没有完全解决外部访问Service的问题，比如负载均衡问题。此时外部网络秩序访问此负载均衡器的IP地址，由负载均衡器负责转发后面某个Node的NodePort上，如下图所示：
 
-![NodePort与LB](https://www.mineor.xyz/images/20221120/node_port_lb.png)
+![NodePort与LB](https://blog.mineor.xyz/images/20221120/node_port_lb.png)
 

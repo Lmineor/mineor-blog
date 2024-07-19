@@ -12,6 +12,6 @@ categories : [              # 文章所属标签
 
 # cilium组件
 
-![cilium组件](https://www.mineor.xyz/images/eBPF/cilium_component.png)
+![cilium组件](https://blog.mineor.xyz/images/eBPF/cilium_component.png)
 
 

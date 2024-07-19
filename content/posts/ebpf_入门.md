@@ -87,7 +87,7 @@ BPF Map的交互场景有一下几种：
 
 共享 map 的 BPF 程序不要求是相同的程序类型，例如 tracing 程序可以和网络程序共享 map，单个 BPF 程序目前最多可直接访问 64 个不同 map。
 
-![maps](https://www.mineor.xyz/images/20230618/map.png)
+![maps](https://blog.mineor.xyz/images/20230618/map.png)
 
 当前可用的 通用 map 有：
 
