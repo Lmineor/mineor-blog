@@ -28,7 +28,7 @@ disqusShortname = ""  ## 是否开启disqus评论，不要和utteranc同时开�
   # if ['custom.css'], load '/static/css/custom.css' file
   # customJS = ['douban.js']
   # if ['custom.js'], load '/static/js/custom.js' file
-
+  cdnJsSite = "apps.bdimg.com/libs"
   # 全局开关，你也可以在每一篇内容的 front matter 中针对单篇内容关闭或开启某些功能
   toc = true  # 是否开启目录
 
