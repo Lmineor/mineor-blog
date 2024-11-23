@@ -20,18 +20,22 @@ categories : [              # 文章所属标签
 
 - 一个L2 二层网络单元
 - 租户可通过Neutron API创建自己的私有/外部网络
-
-[代码模型定义]()
+[代码模型定义](https://github.com/openstack/neutron/blob/master/neutron/db/models_v2.py#L313)
 
 ## Subnet
 
 - 一个L3的IPv4/IPv6地址段
 - 为VM提供私网或公网IP地址
 
+[代码模型定义](https://github.com/openstack/neutron/blob/master/neutron/db/models_v2.py#L195)
+
 ## Router
 
 - 三层路由器
 - 为租户的VM提供路由功能，连接Internet
+
+[代码模型定义](https://github.com/openstack/neutron/blob/master/neutron/db/models/l3.py#L47)
+
 
 ## Port
 

@@ -9,4 +9,4 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: ssh到服务器执行git pull
-        run: sshpass -p ${{secrets.REMOTE_PWD}} ssh -o StrictHostKeyChecking=no root@${{secrets.REMOTE_IP}} "cd /root/hugo/dashboard && chmod +x build.sh && ./build.sh"
+        run: sshpass -p ${{secrets.REMOTE_PWD}} ssh -o StrictHostKeyChecking=no root@${{secrets.REMOTE_IP}} "cd /root/blog/mineor-blog && chmod +x build.sh && ./build.sh"
