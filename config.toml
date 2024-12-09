@@ -1,105 +1,143 @@
-baseURL = "https://blog.mineor.xyz"
-languageCode = "zh-CN"
-title = "mineor"
-theme = "maupassant"
-googleAnalytics = "G-K2WK1DC523"  # UA-XXXXXXXX-X/G-XXXXXXXXXX
+baseURL = 'https://blog.mineor.xyz/'
+languageCode = 'zh-cn'
+title = 'mineor'
 
-## 保持分类的原始名字（false会做转小写处理）
-preserveTaxonomyNames = true
-## 是否禁止URL Path转小写
-disablePathToLower = true
+# 启用主题
+theme = 'virgo'
 
 hasCJKLanguage = true
-summaryLength = 140
+summaryLength = 80
+paginate = 10000
+enableGitInfo = true
+timeZone = 'Asia/Shanghai'
 
-disqusShortname = ""  ## 是否开启disqus评论，不要和utteranc同时开启
+ignoreFiles = ['\\.obsidian/*']
 
 [params]
-  author = "lex"
-  subtitle = "凡世的喧嚣与明亮，世俗的快乐和幸福，如同清亮的溪涧，在风里，在我眼前，汨汨而过，温暖如同泉水一样涌出来。我没有奢望，我只要你快乐，不要悲伤。"
-  keywords = "平凡而又那么普通"
-  description = "凡世的喧嚣与明亮，世俗的快乐和幸福，如同清亮的溪涧，在风里，在我眼前，汨汨而过，温暖如同泉水一样涌出来。我没有奢望，我只要你快乐，不要悲伤。"
-  busuanzi = true #启用不算子网页统计
-  googleAd = ""  #ca-pub-xxxxxxxxxxxxxx
-  localSearch = true # 启用本地搜索
+    dark = false                             # 默认开启暗色主题
+    author = 'Lex'
+    slogan = 'Life should be interesting.'  # 'Life is just a joker.'
+    startDate = 2020                        # 'Copyright © 2016 - now'
+    # 激活页面加载时的过渡动画
+    hasActiveAnimate = true
+    # 激活页面浮动盒子动画
+    # hasActiveFloatingBox = true
+    # 文章页是否显示其相关系列文章（页面左侧区域）
+    isShowRelativePosts = true
+    # 导航页右侧是否显示迷你必应搜索
+    isShowMinishipBoxOfNav = true
+    # 导航页是否显示顶部搜索区域
+    isShowShipBoxOfNav = true
+    # 导航页是否显示站内搜索（站内文章内容检索）
+    # isShowLocalSearch = true
+    # 导航页是否显示最近文章列表
+    isShowRecentPostsOfNav = true
 
-  # 这里我存放在了主题的static文件夹里，根目录的似乎也可以
-  # customCSS = ['douban.css', 'other.css']
-  # if ['custom.css'], load '/static/css/custom.css' file
-  # customJS = ['douban.js']
-  # if ['custom.js'], load '/static/js/custom.js' file
-  cdnJsSite = "apps.bdimg.com/libs"
-  # 全局开关，你也可以在每一篇内容的 front matter 中针对单篇内容关闭或开启某些功能
-  toc = true  # 是否开启目录
+    # 激活 cool 模式，酷爽但是消耗资源也更多，
+    # 浏览器有缓存，更换后强制页面刷新（快捷键为 Ctrl+Shift+R）一下或重启本地服务即可，
+    # ------------------
+    # <更新> 现在可以直接在这里修改背景壁纸并调整壁纸遮罩透明度
+    # - coolBackground 文件位于 `/static/imgs/bg` 文件夹中，默认为 `default.jpg`
+    # - coolOpacity 默认为 0.81 ，背景色彩透明度，在 0 ~ 1 之间
+    # - coolSaturate 默认为 180% ，背景色彩饱和度，在 0% ~ 200% 之间
+    # - coolBlur 默认为 6px ，背景色彩模糊度，数值越大越模糊
+    # hasActiveCool = true
+    coolBackground = 'color.jpg'
+    coolOpacity = 0.69 # 0.86
+    coolSaturate = '180%'
+    coolBlur = '6px'
 
-  beian = "豫ICP备20008675号"
+    # 首页图片/文字
+    [params.img]
+        # 内置默认为 `cat.svg ……`，当然你可以
+        # 把自己喜欢图片放在 `static/imgs/` 目录中，并在 `src` 引用它,
+        # ❌ 你还可以通过 `width` 调整引入图片的显示大小，
+        # ❌ 如果，将 `width` 设置为 '' 或 0 ，
+        # ❌ 将默认使用图片自身分辨率尺寸
+        # ❌ width = 90
+        # 🔔 图标用途发生变化，不再支持此处设置尺寸，但
+        # 新增支持设置背景色，
+        # 将 background 设置为 ''，默认为 `#000`
+        # ！ 为保证显示效果，建议选用 1：1 比例图片
+        # src = 'cat.svg'
+        src = 'touxiang.png'
+        background = '#0003'
+        # 为该图片附加一个点击链接功能，缺省为 `/about`，当然
+        # 你也可以定义为任何你相要的超链接
+        link = '/about'
 
-  
-## 友情链接，可以多个
-[[params.links]]
-  title = "GitHub"
-  name = "作者的GitHub"
-  url = "https://github.com/Lmineor"
+    [params.contact]
+        icp = '豫ICP备20008675号'             # 备案号，如果你不想显示，设置为 '' 空即可
+        icplink = '//beian.miit.gov.cn'           # 备案链接
+        beian = ''     # 公安备案，如果你不想显示，设置为 '' 空即可
+        beiancode = ''              # 公安备案识别码
+        github_user = 'loveminimal'               # Github 用户名，导航页 github 小组件使用
+        # wechat = 'imgs/bg/wechat.jpg'             # 微信二维码地址
+        weibo = ''
+        zhihu = ''
+        jianshu = ''
+        email = 'luohai2233@163.com'
+        github = 'https://github.com/Lmineor/mineor-blog'
+        bilibili = ''
+        douyin = ''
+        xiaohongshu = ''
+        # reddit = 'https://www.reddit.com/user/aituyaa'
+        twitter = ''
+        # mastodon = 'https://mastodon.social/@loveminimal'
+        # instagram = 'https://www.instagram.com/loveminimal163'
+        youtube = ''
+        telegram = ''   # 'https://t.me/aituyaa'
+        # discord = 'https://discord.com/channels/@me'
 
-[[params.links]]
-  title = "飞雪无情的博客"
-  name = "飞雪无情的博客"
-  url = "https://www.flysnow.org/"
+        [params.contact.config]
+            color = '#696969'                         # 图标颜色，默认为浅灰色
+            slogan = ''                               # 联系标语，不想显示，可以置空
+            # isShowNavLink = true                      # 是否在联系栏左侧显示快捷导航链接（PS：站点首页总会显示）
+            target = '_self'                          # 定义左侧快捷导航链接打开方式，_blank 在新标签页 _self 在当前标签页
+            ship = ''                                 # 联系栏 icon ，允许自定义该图标链接（/ship 为外链的个人定制化搜索页）；隐藏，设置为 '' 空即可
 
-## 侧边栏广告位
-[[params.ads]]
-  title = "阿里云“99计划”，新老同享，低价长效，助力开发者普惠上云！"
-  url = "https://www.aliyun.com/daily-act/ecs/activity_selection?userCode=dq5wjmpz"
-  img = "https://img.alicdn.com/imgextra/i1/O1CN01JOLCyL1MysL7GoLbX_!!6000000001504-2-tps-638-244.png"
-#[[params.ads]]
-#  title = "助力产业智慧升级，云服务器首年88元起，更有千元代金券礼包免费领！"
-#  url = "https://cloud.tencent.com/act/cps/redirect?redirect=1048&cps_key=14ff722692ac784fa8c3301c8c28d924&from=console"
-#  img = "https://upload-dianshi-1255598498.file.myqcloud.com/345-7c71532bd4935fbdd9a67c1a71e577b1767b805c.200%E7%89%88%E6%9C%ACB.jpg"
-#[[params.ads]]
-#  title = "【渠道专享低折扣】11月特惠 限时2折"
-#  url = "https://www.aliyun.com/acts/limit-buy?userCode=jdg9oj97"
-#  img = "https://img.alicdn.com/tfs/TB1hblJl7Y2gK0jSZFgXXc5OFXa-750-400.jpg"
-#
-## 配置 utteranc评论,教程参考 https://utteranc.es/
-[params.utteranc]
-  enable = true
-  repo = "https://github.com" ##换成自己得
-  issueTerm = "pathname"
-  theme = "github-light"
-## 配置 waline 评论系统,教程参考 https://waline.js.org/
-[params.waline]
-  enable = true
-  placeholder = "说点什么吧..."
-  serverURL = "https://waline.mineor.xyz/" #换成你的serverURL
-## 开启版权声明，协议名字和链接都可以换
-[params.cc]
-    name = "知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议"
-    link = "https://creativecommons.org/licenses/by-nc-nd/4.0/"
+    # https://utteranc.es/
+    # 在开发环境下（http://localhost:1313/），不再启用评论插件，
+    # 如果想在开发环境下启用它，修改服务端口即可，如下
+    # hugo server -p=1314
+    [params.utterances]
+        active = false                            # 是否启用评论插件
+        repo = "loveminimal/comment"              # 输入你的仓库名称
+        issueTerm = "pathname"
+        theme = "github-light"
+        crossorigin = "anonymous"
 
-## 配置代码高亮
+    # 在开发环境下（http://localhost:1313/），不再启用评论插件，
+    # 如果想在开发环境下启用它，修改服务端口即可，如下
+    # hugo server -p=1314
+    # ---------
+    # 在 https://giscus.app/ 中，选择配置后会自动生成，如 data-*
+    # 默认开启 data-loading="lazy"
+    [params.giscus]
+        active = false                             # 是否启用评论插件
+        repo = "loveminimal/comment"              # 输入你的仓库名称
+        repoId = "R_kgDOJNJQ8g"
+        category="General"
+        categoryId="DIC_kwDOJNJQ8s4CYl0m"
+        mapping = "title"
+        inputPosition = "bottom"
+        theme = "noborder_light"
+        crossorigin = "anonymous"
+        lang = "zh-CN"
+
+# 以下为 Markdown 解析擎的一些设置，
+# 建议保持不变
 [markup]
-  [markup.highlight]
-    lineNos = true
-    style = "github"
-
-## 配置网站菜单
-
-[menu]
-
-  [[menu.main]]
-    identifier = "tools"
-    name = "工具"
-    url = "/tools/"
-    weight = 2
-
-  [[menu.main]]
-    identifier = "archives"
-    name = "归档"
-    url = "/archives/"
-    weight = 3
-
-  [[menu.main]]
-    identifier = "about"
-    name = "关于"
-    url = "/about/"
-    weight = 4
+    [markup.asciidocExt]
+        preserveTOC = true
+    [markup.highlight]
+        # 代码块显示风格、行号显示
+        style = "github"
+        lineNos = true
+    [markup.tableOfContents]
+        endLevel = 3
+        ordered = false
+        startLevel = 2
+    [markup.goldmark]
+        [markup.goldmark.renderer]
+            unsafe = true
