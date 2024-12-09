@@ -3,7 +3,7 @@ title: "ASCII码表"
 date: 2023-02-23
 draft: false
 tags : [                    # 文章所属标签
-    "Linux",
+    "积累",
 ]
 categories : [              # 文章所属标签
     "技术",
