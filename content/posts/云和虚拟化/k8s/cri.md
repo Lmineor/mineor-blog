@@ -3,10 +3,7 @@ title: "CRI"
 date: 2022-12-10
 draft: false
 tags : [                    # 文章所属标签
-    "容器", 
-]
-categories : [              # 文章所属标签
-    "技术",
+    "容器", "k8s"
 ]
 ---
 

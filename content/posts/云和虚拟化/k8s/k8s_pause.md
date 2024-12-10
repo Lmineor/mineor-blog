@@ -5,9 +5,6 @@ draft: false
 tags : [                    # 文章所属标签
     "k8s",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
 ---
 
 # 了解pause

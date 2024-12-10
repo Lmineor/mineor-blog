@@ -3,11 +3,9 @@ title: "学习一下sync.Cond的用法"
 date: 2022-10-19
 draft: false
 tags : [                    # 文章所属标签
-    "go",
+    "Go",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
+
 ---
 
 使用场景：  

@@ -3,10 +3,8 @@ title: "CNI插件"
 date: 2022-12-10
 draft: false
 tags : [                    # 文章所属标签
-    "Go", "k8s",
-]
-categories : [              # 文章所属标签
-    "技术", 
+    "k8s",
+    "CNI"
 ]
 ---
 

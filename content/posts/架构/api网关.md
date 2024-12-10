@@ -5,9 +5,6 @@ draft: false
 tags : [                    # 文章所属标签
     "架构",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
 ---
 
 参考：[JAVA架构师笔记](https://zq99299.github.io/note-architect/hc/05/07.html#api-%E7%BD%91%E5%85%B3%E8%A6%81%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0)

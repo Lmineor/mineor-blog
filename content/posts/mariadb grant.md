@@ -3,7 +3,7 @@ title: "Mariadb Grant命令"
 date: 2023-11-26
 draft: false
 tags : [                    # 文章所属标签
-    "Maridb"
+    "数据库"
 ]
 categories : [              # 文章所属标签
     "技术",

@@ -5,7 +5,4 @@ draft: true
 tags : [                    # 文章所属标签
     "软件工程",
 ]
-categories : [              # 文章所属标签
-    "阅读",
-]
 ---

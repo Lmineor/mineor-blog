@@ -5,9 +5,6 @@ draft: false
 tags : [                    # 文章所属标签
     "Docker",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
 ---
 
 

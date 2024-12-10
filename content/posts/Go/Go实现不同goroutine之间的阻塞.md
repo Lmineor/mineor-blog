@@ -3,10 +3,7 @@ title: "Go实现不同goroutine之间的阻塞"
 date: 2022-10-12T21:14:15+08:00
 draft: false
 tags : [                    # 文章所属标签
-    "go",
-]
-categories : [              # 文章所属标签
-    "技术",
+    "Go",
 ]
 ---
 

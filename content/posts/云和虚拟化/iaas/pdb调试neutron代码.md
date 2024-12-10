@@ -3,10 +3,7 @@ title: "pdb调试neutron代码"
 date: 2024-10-20
 draft: false
 tags : [                    # 文章所属标签
-    "SDN",
-]
-categories : [              # 文章所属标签
-    "技术",
+    "Iaas"
 ]
 ---
 

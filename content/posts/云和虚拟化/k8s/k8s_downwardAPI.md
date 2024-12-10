@@ -3,19 +3,7 @@ title: "k8s downward API"
 date: 2023-06-18
 draft: false
 tags : [                    # 文章所属标签
-    "Docker",
-    "Go", 
-    "Python",
-    "Linux",
     "k8s",
-    "Cloud",
-    "SDN"
-]
-categories : [              # 文章所属标签
-    "技术",
-    "美食",
-    "生活",
-    "阅读",
 ]
 ---
 

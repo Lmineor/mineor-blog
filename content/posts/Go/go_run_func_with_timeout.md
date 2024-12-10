@@ -5,9 +5,6 @@ draft: false
 tags : [                    # 文章所属标签
     "Go",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
 ---
 
 go中实现超时控制下执行函数功能

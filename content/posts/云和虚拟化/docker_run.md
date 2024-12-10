@@ -3,10 +3,7 @@ title: "docker run命令详解"
 date: 2022-10-19
 draft: false
 tags : [                    # 文章所属标签
-    "docker", "容器与虚拟化",
-]
-categories : [              # 文章所属标签
-    "技术", 
+    "docker"
 ]
 ---
 

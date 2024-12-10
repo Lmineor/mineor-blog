@@ -3,7 +3,7 @@ title: "SaaS多租户系统数据隔离实现方案"
 date: 2023-06-08
 draft: false
 tags : [                    # 文章所属标签
-    "Cloud"
+    "积累"
 ]
 categories : [              # 文章所属标签
     "技术",

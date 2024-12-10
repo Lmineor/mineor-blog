@@ -5,9 +5,6 @@ draft: false
 tags : [                    # 文章所属标签
     "k8s",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
 ---
 
 Service对象隐藏了各Pod资源，并负责将客户端的请求流量调度至该组pod对象之上。不过，偶尔也会存在这样一类需求：客户端需要直接访问Service资源后端的所有pod资源，这时就应该向客户端暴露每个pod资源的IP地址，而不再是中间层Service对象的ClusterIP，这种类型的Service资源便称为Headless Service。

@@ -3,10 +3,7 @@ title: "互斥锁"
 date: 2022-10-19
 draft: false
 tags : [                    # 文章所属标签
-    "go",
-]
-categories : [              # 文章所属标签
-    "技术",
+    "Go",
 ]
 ---
 

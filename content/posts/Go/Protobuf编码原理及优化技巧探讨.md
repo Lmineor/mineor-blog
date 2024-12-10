@@ -5,9 +5,7 @@ draft: false
 tags : [                    # 文章所属标签
     "Go", 
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
+
 ---
 
 > https://mp.weixin.qq.com/s/hAfrPlPD2KBCWxpIuGkQTQ

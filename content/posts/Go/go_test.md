@@ -5,9 +5,7 @@ draft: true
 tags : [                    # 文章所属标签
     "Go",
 ]
-categories : [              # 文章所属标签
-    "技术",
-]
+
 ---
 
 

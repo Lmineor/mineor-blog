@@ -3,8 +3,6 @@ title: "proxy_pass的末尾带不带/的作用"
 date: 2024-06-30
 draft: false
 tags : [                    # 文章所属标签
-    "Docker",
-    "Go", 
     "nginx",
 ]
 categories : [              # 文章所属标签

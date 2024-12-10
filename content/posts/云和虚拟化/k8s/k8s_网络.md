@@ -3,10 +3,7 @@ title: "k8s网络"
 date: 2023-05-08
 draft: false
 tags : [                    # 文章所属标签
-    "Linux", "k8s"
-]
-categories : [              # 文章所属标签
-    "技术",
+    "k8s"
 ]
 ---
 

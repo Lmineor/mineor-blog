@@ -3,10 +3,7 @@ title: "《k8s权威指南学习》--Service"
 date: 2023-03-26
 draft: false
 tags : [                    # 文章所属标签
-    "Linux",
-]
-categories : [              # 文章所属标签
-    "技术",
+    "k8s",
 ]
 ---
 

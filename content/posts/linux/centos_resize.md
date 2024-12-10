@@ -3,7 +3,7 @@ title: "centos磁盘扩容"
 date: 2022-10-19
 draft: false
 tags: [
-    "centos",
+    "Linux",
 ]
 ---
 

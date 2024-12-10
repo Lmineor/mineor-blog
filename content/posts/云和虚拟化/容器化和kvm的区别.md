@@ -3,15 +3,7 @@ title: "容器化和kvm的区别"
 date: 2023-06-18
 draft: false
 tags : [                    # 文章所属标签
-    "Docker",
-    "Go", 
-    "Linux",
-    "k8s",
-    "Cloud",
-    "SDN"
-]
-categories : [              # 文章所属标签
-    "技术",
+    "容器", 
 ]
 ---
 

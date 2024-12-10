@@ -3,11 +3,7 @@ title: "hypervisor"
 date: 2023-06-18
 draft: false
 tags : [                    # 文章所属标签
-    "Linux",
-    "SDN"
-]
-categories : [              # 文章所属标签
-    "技术",
+    "虚拟化",
 ]
 ---
 
