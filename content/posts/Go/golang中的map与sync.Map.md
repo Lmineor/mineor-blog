@@ -86,9 +86,9 @@ type entry struct {
 }
 ```
 
-## 主要方法
+## 2.3 主要方法
 
-#### Load
+#### 2.3.1 Load
 
 Load根据key拿到map中存储的值，如果没有的话返回nil，
 ok代表map中是否有结果
@@ -121,6 +121,98 @@ func (m *Map) Load(key any) (value any, ok bool) {
 	}
 	return e.load()
 }
+
+// misss长度小于dirty长度时，只++miss
+// 否则把dirty提升为read，然后dirty置为nil。miss归零
+func (m *Map) missLocked() {
+	m.misses++
+	if m.misses < len(m.dirty) {
+		return
+	}
+	m.read.Store(&readOnly{m: m.dirty})
+	m.dirty = nil
+	m.misses = 0
+}
+
+```
+
+### 2.3.2 Store&Swap
+
+```go
+func (m *Map) Store(key, value any) {
+	_, _ = m.Swap(key, value)
+}
+
+// Swap 如字面意思，就是新旧交换，存新的，返回旧的
+func (m *Map) Swap(key, value any) (previous any, loaded bool) {
+	read := m.loadReadOnly()
+	if e, ok := read.m[key]; ok { //read里面有，则直接进行变更，不加锁，原子操作
+		if v, ok := e.trySwap(&value); ok {
+			if v == nil {
+				return nil, false
+			}
+			return *v, true
+		}
+	}
+
+	// read里面没有，加锁进一步操作
+	m.mu.Lock()
+	read = m.loadReadOnly()
+	// 再读一次的目的是防止加锁的过程中dirty变成read
+	if e, ok := read.m[key]; ok {
+		if e.unexpungeLocked() {
+			//如果读到的值为expunged，对于nil的元素，搞成了expunged，所以意味着dirty不为nil，且这个元素中没有该元素
+			m.dirty[key] = e
+		}
+		// 更新read中的值
+		if v := e.swapLocked(&value); v != nil {
+			loaded = true
+			previous = *v
+		}
+	} else if e, ok := m.dirty[key]; ok {  // 不在read中，在dirty中
+		if v := e.swapLocked(&value); v != nil {
+			loaded = true
+			previous = *v
+		}
+	} else {
+		if !read.amended {
+			// read.amended==false,说明dirty map为空，需要将read map 复制一份到dirty map
+			m.dirtyLocked()
+			m.read.Store(&readOnly{m: read.m, amended: true})
+		}
+		m.dirty[key] = newEntry(value)
+	}
+	m.mu.Unlock()
+	return previous, loaded
+}
+
+func (e *entry) trySwap(i *any) (*any, bool) {
+	for {
+		p := e.p.Load()
+		if p == expunged {
+			return nil, false
+		}
+		if e.p.CompareAndSwap(p, i) {
+			return p, true
+		}
+	}
+}
+
+func (m *Map) dirtyLocked() {
+	if m.dirty != nil {
+		return
+	}
+
+	read := m.loadReadOnly()
+	m.dirty = make(map[any]*entry, len(read.m))
+	for k, e := range read.m {
+		if !e.tryExpungeLocked() {
+			m.dirty[k] = e
+		}
+	}
+}
+
+
 ```
 
 - **并发安全，且虽然用到了锁，但是显著减少了锁的争用**。 sync.map出现之前，如果想要实现并发安全的map，只能自行构建，使用sync.Mutex或sync.RWMutex，再加上原生的map就可以轻松做到，sync.map也用到了锁，但是在尽可能的避免使用锁，因为使用锁意味着要把一些并行化的东西串行化，会降低程序性能，因此能用原子操作就不要用锁，但是原子操作局限性比较大，只能对一些基本的类型提供支持，在sync.map中将两者做了比较完美的结合。
