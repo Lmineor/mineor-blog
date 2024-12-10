@@ -106,16 +106,12 @@ func (m *Map) Load(key any) (value any, ok bool) {
 	e, ok := read.m[key]
 	if !ok && read.amended { // read中没有取到，且dirty map中的key没有在read中（即该值在dirty中，不在read中），则进行加锁去读
 		m.mu.Lock()
-		// Avoid reporting a spurious miss if m.dirty got promoted while we were
-		// blocked on m.mu. (If further loads of the same key will not miss, it's
-		// not worth copying the dirty map for this key.)
+		// 再读一次的目的是防止加锁的过程中dirty变成read，防止出现读不到的错误
 		read = m.loadReadOnly()
 		e, ok = read.m[key]
 		if !ok && read.amended {
 			e, ok = m.dirty[key]
-			// Regardless of whether the entry was present, record a miss: this key
-			// will take the slow path until the dirty map is promoted to the read
-			// map.
+			// 不管是否存在，都要记录miss: 
 			m.missLocked()
 		}
 		m.mu.Unlock()
