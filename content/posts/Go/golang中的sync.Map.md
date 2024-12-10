@@ -15,12 +15,11 @@ Go语言版本
 go version go1.20 windows/amd64
 ```
 
-# sync.map
 
 sync.map 则是一种并发安全的 map，在 Go 1.9 引入
 
 
-## 2.1 特点
+# 1 特点
 
 Map 类型针对两种常见用例进行了优化：
 
@@ -40,9 +39,9 @@ Map 类型针对两种常见用例进行了优化：
 - 当 CompareAndSwap 返回 swapped 为 true 时，它是写入操作；
 - 当 CompareAndDelete 返回 deleted 为 true 时，它是写入操作。
 
-## 2.2 结构体
+## 1.1 结构体
 
-### 2.2.1 Map结构体
+### 1.1.1 Map结构体
 
 ```go
 type Map struct {
@@ -66,7 +65,7 @@ type Map struct {
 }
 ```
 
-### 2.2.2 readOnly结构体
+### 1.1.2 readOnly结构体
 
 readOnly 是一个不可变的结构体，以原子方式存储在 Map.read 字段中。
 
@@ -77,7 +76,7 @@ type readOnly struct {
 }
 ```
 
-### 2.2.3 entry结构体
+### 1.1.3 entry结构体
 
 ```go
 type entry struct {
@@ -94,7 +93,7 @@ type entry struct {
 }
 ```
 
-## 2.3 主要方法
+# 2 主要方法
 
 - Load(key any) (value any, ok bool) 
 - Store(key, value any)
@@ -104,7 +103,7 @@ type entry struct {
 - Delete(key any)
 - Range(f func(key, value any) bool)
 
-#### 2.3.1 Load
+## 2.1 Load
 
 Load根据key拿到map中存储的值，如果没有的话返回nil，
 ok代表map中是否有结果
@@ -152,7 +151,7 @@ func (m *Map) missLocked() {
 
 ```
 
-### 2.3.2 Store&Swap
+## 2.2 Store&Swap
 
 ```go
 func (m *Map) Store(key, value any) {
@@ -229,7 +228,7 @@ func (m *Map) dirtyLocked() {
 }
 ```
 
-### 2.3.3 LoadOrStore
+## 2.3 LoadOrStore
 
 有则返回，没有则存储
 
@@ -299,7 +298,7 @@ func (e *entry) tryLoadOrStore(i any) (actual any, loaded, ok bool) {
 
 ```
 
-### 2.3.4 LoadAndDelete
+## 2.4 LoadAndDelete
 
 根据key 删除元素，返回已删除元素的值
 
@@ -347,7 +346,7 @@ func (e *entry) delete() (value any, ok bool) {
 
 ```
 
-### 2.3.5 Delete
+## 2.5 Delete
 
 删除元素
 
@@ -357,7 +356,7 @@ func (m *Map) Delete(key any) {
 }
 ```
 
-### 2.3.6 Range
+## 2.6 Range
 
 ```go
 func (m *Map) Range(f func(key, value any) bool) {
@@ -399,13 +398,13 @@ func (e *entry) load() (value any, ok bool) {
 ```
 
 
-## 3 如何保证键类型和值类型的正确性
+# 3 如何保证键类型和值类型的正确性
 
 map的键类型的不能是哪些类型：即函数类型、切片类型、字典类型，同样的，对sync.map的键类型也是一样的，不能为这3种类型。
 
 而sync.map中涉及到的键和值类型都为any类型，所以必须依赖我们自己来保证键类型和值类型的正确性，那么问题就来了：如何保证并发安全字典中键和值类型的正确性?
 
-### 方案一：让sync.Map只存储某个特定类型的键
+## 方案一：让sync.Map只存储某个特定类型的键
 
 ```go
 // IntStrMap 代表键类型为int、值类型为string的并发安全字典。
@@ -445,7 +444,7 @@ func (iMap *IntStrMap) Store(key int, value string) {
 
 方案一的实现很简单，但是缺点也是显而易见的，非常不灵活，不能灵活改变键和值的类型，需求多了之后，会产生很多雷同的代码，因此我们来看方案二
 
-### 方案二：封装的结构体类型的所有方法，与sync.Map类型完全一致，此时需要类型检查
+## 方案二：封装的结构体类型的所有方法，与sync.Map类型完全一致，此时需要类型检查
 
 ```go
 // ConcurrentMap 代表可自定义键类型和值类型的并发安全字典。
