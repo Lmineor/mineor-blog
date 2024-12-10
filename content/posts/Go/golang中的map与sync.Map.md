@@ -1,7 +1,7 @@
 ---
 title: "Golang中的map与sync.map"
 date: 2024-12-10
-draft: true
+draft: false
 tags : [                    # 文章所属标签
     "Go",
 ]
@@ -12,6 +12,8 @@ tags : [                    # 文章所属标签
 todo
 
 # 2 sync.map
+
+sync.map 则是一种并发安全的 map，在 Go 1.9 引入
 
 ## 2.1 特点
 
@@ -40,10 +42,10 @@ Map 类型针对两种常见用例进行了优化：
 type Map struct {
 	mu Mutex
 
-    // read 包含map内容中可安全进行并发访问的部分（无论是否持有 mu）
+    // read 包含map内容中可安全进行并发访问的部分（无论是否加锁）
     // read 字段本身可以安全读取，但只有在加锁的情况下才能存储
     // 存储在 read 中的条目可以在不加锁的情况下并发更新，
-    // 更新先前删除的条目需要将条目复制到dirty map中，并在加锁的情况下取消删除
+    // 更新之前删除（expunged）的键值对需要在加锁的情况下将键值对复制到dirty map中，并标记为未删除（unexpunged）
 	read atomic.Pointer[readOnly]
 
     // dirty 包含map内容的部分，需要加锁
@@ -345,19 +347,13 @@ func (m *Map) Delete(key any) {
 
 ```go
 func (m *Map) Range(f func(key, value any) bool) {
-	// We need to be able to iterate over all of the keys that were already
-	// present at the start of the call to Range.
-	// If read.amended is false, then read.m satisfies that property without
-	// requiring us to hold m.mu for a long time.
 	read := m.loadReadOnly()
 	if read.amended {
-		// m.dirty contains keys not in read.m. Fortunately, Range is already O(N)
-		// (assuming the caller does not break out early), so a call to Range
-		// amortizes an entire copy of the map: we can promote the dirty copy
-		// immediately!
+		// dirty中的key不在read中
 		m.mu.Lock()
 		read = m.loadReadOnly()
 		if read.amended {
+			//升级dirty
 			read = readOnly{m: m.dirty}
 			m.read.Store(&read)
 			m.dirty = nil
@@ -365,27 +361,25 @@ func (m *Map) Range(f func(key, value any) bool) {
 		}
 		m.mu.Unlock()
 	}
-
+	// 此时，dirty和read都一致
 	for k, e := range read.m {
 		v, ok := e.load()
 		if !ok {
+			// 元素被标记为删除，忽略
 			continue
 		}
+		//函数返回false，终止
 		if !f(k, v) {
 			break
 		}
 	}
 }
+
+func (e *entry) load() (value any, ok bool) {
+	p := e.p.Load()
+	if p == nil || p == expunged {
+		return nil, false
+	}
+	return *p, true
+}
 ```
-
-- **并发安全，且虽然用到了锁，但是显著减少了锁的争用**。 sync.map出现之前，如果想要实现并发安全的map，只能自行构建，使用sync.Mutex或sync.RWMutex，再加上原生的map就可以轻松做到，sync.map也用到了锁，但是在尽可能的避免使用锁，因为使用锁意味着要把一些并行化的东西串行化，会降低程序性能，因此能用原子操作就不要用锁，但是原子操作局限性比较大，只能对一些基本的类型提供支持，在sync.map中将两者做了比较完美的结合。
-- **存取删操作的算法复杂度与map一样，都是O(1)**
-- **不会做类型检查。**  sync.map只是go语言标准库中的一员，而不是语言层面的东西，也正是因为这一点，go语言的编译器不会对其中的键和值进行特殊的类型检查
-
-作者：xixisuli
-
-链接：https://www.jianshu.com/p/7c4fb2c3c66e
-
-来源：简书
-
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
