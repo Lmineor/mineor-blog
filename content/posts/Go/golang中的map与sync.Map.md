@@ -7,13 +7,18 @@ tags : [                    # 文章所属标签
 ]
 ---
 
-# map
+参考：https://www.jianshu.com/p/7c4fb2c3c66e
 
-todo
+Go语言版本
 
-# 2 sync.map
+```bash
+go version go1.20 windows/amd64
+```
+
+# sync.map
 
 sync.map 则是一种并发安全的 map，在 Go 1.9 引入
+
 
 ## 2.1 特点
 
@@ -25,6 +30,7 @@ Map 类型针对两种常见用例进行了优化：
 在这两种情况下，与搭配单独的 Mutex 或 RWMutex 的 Go map 相比，使用 Map 可以显著减少锁争用。
 
 > 需要注意的是:Map的零值为空且可以直接使用，且如果被使用后不能被复制
+
 
 在 Go 内存模型的术语中，Map 安排“在”任一读取操作观察到写入效果之前“进行同步”，读取和写入操作定义如下。
 
@@ -89,6 +95,14 @@ type entry struct {
 ```
 
 ## 2.3 主要方法
+
+- Load(key any) (value any, ok bool) 
+- Store(key, value any)
+- Swap(key, value any) (previous any, loaded bool)
+- LoadOrStore(key, value any) (actual any, loaded bool)
+- LoadAndDelete(key any) (value any, loaded bool)
+- Delete(key any)
+- Range(f func(key, value any) bool)
 
 #### 2.3.1 Load
 
@@ -381,5 +395,119 @@ func (e *entry) load() (value any, ok bool) {
 		return nil, false
 	}
 	return *p, true
+}
+```
+
+
+## 3 如何保证键类型和值类型的正确性
+
+map的键类型的不能是哪些类型：即函数类型、切片类型、字典类型，同样的，对sync.map的键类型也是一样的，不能为这3种类型。
+
+而sync.map中涉及到的键和值类型都为any类型，所以必须依赖我们自己来保证键类型和值类型的正确性，那么问题就来了：如何保证并发安全字典中键和值类型的正确性?
+
+### 方案一：让sync.Map只存储某个特定类型的键
+
+```go
+// IntStrMap 代表键类型为int、值类型为string的并发安全字典。
+type IntStrMap struct {
+	m sync.Map
+}
+
+func (iMap *IntStrMap) Delete(key int) {
+	iMap.m.Delete(key)
+}
+
+func (iMap *IntStrMap) Load(key int) (value string, ok bool) {
+	v, ok := iMap.m.Load(key)
+	if v != nil {
+		value = v.(string)
+	}
+	return
+}
+
+func (iMap *IntStrMap) LoadOrStore(key int, value string) (actual string, loaded bool) {
+	a, loaded := iMap.m.LoadOrStore(key, value)
+	actual = a.(string)
+	return
+}
+
+func (iMap *IntStrMap) Range(f func(key int, value string) bool) {
+	f1 := func(key, value interface{}) bool {
+		return f(key.(int), value.(string))
+	}
+	iMap.m.Range(f1)
+}
+
+func (iMap *IntStrMap) Store(key int, value string) {
+	iMap.m.Store(key, value)
+}
+```
+
+方案一的实现很简单，但是缺点也是显而易见的，非常不灵活，不能灵活改变键和值的类型，需求多了之后，会产生很多雷同的代码，因此我们来看方案二
+
+### 方案二：封装的结构体类型的所有方法，与sync.Map类型完全一致，此时需要类型检查
+
+```go
+// ConcurrentMap 代表可自定义键类型和值类型的并发安全字典。
+type ConcurrentMap struct {
+    m         sync.Map
+    keyType   reflect.Type  //键类型
+    valueType reflect.Type  //值类型
+}
+
+func NewConcurrentMap(keyType, valueType reflect.Type) (*ConcurrentMap, error) {
+    if keyType == nil {
+        return nil, errors.New("nil key type")
+    }
+    if !keyType.Comparable() {
+        return nil, fmt.Errorf("incomparable key type: %s", keyType)
+    }
+    if valueType == nil {
+        return nil, errors.New("nil value type")
+    }
+    cMap := &ConcurrentMap{
+        keyType:   keyType,
+        valueType: valueType,
+    }
+    return cMap, nil
+}
+
+func (cMap *ConcurrentMap) Delete(key interface{}) {
+    if reflect.TypeOf(key) != cMap.keyType {
+        return
+    }
+    cMap.m.Delete(key)
+}
+
+func (cMap *ConcurrentMap) Load(key interface{}) (value interface{}, ok bool) {
+    if reflect.TypeOf(key) != cMap.keyType {
+        return
+    }
+    return cMap.m.Load(key)
+}
+
+func (cMap *ConcurrentMap) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
+    if reflect.TypeOf(key) != cMap.keyType {
+        panic(fmt.Errorf("wrong key type: %v", reflect.TypeOf(key)))
+    }
+    if reflect.TypeOf(value) != cMap.valueType {
+        panic(fmt.Errorf("wrong value type: %v", reflect.TypeOf(value)))
+    }
+    actual, loaded = cMap.m.LoadOrStore(key, value)
+    return
+}
+
+func (cMap *ConcurrentMap) Range(f func(key, value interface{}) bool) {
+    cMap.m.Range(f)
+}
+
+func (cMap *ConcurrentMap) Store(key, value interface{}) {
+    if reflect.TypeOf(key) != cMap.keyType {
+        panic(fmt.Errorf("wrong key type: %v", reflect.TypeOf(key)))
+    }
+    if reflect.TypeOf(value) != cMap.valueType {
+        panic(fmt.Errorf("wrong value type: %v", reflect.TypeOf(value)))
+    }
+    cMap.m.Store(key, value)
 }
 ```
