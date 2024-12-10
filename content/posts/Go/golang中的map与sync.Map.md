@@ -34,6 +34,8 @@ Map 类型针对两种常见用例进行了优化：
 
 ## 2.2 结构体
 
+### 2.2.1 Map结构体
+
 ```go
 type Map struct {
 	mu Mutex
@@ -51,7 +53,77 @@ type Map struct {
 	dirty map[any]*entry
 
     // 记录read读取不到数据，需要加锁读取的次数
+    // 当misses等于dirty的长度时，会将dirty复制到read
 	misses int
+}
+```
+
+### 2.2.2 readOnly结构体
+
+readOnly 是一个不可变的结构体，以原子方式存储在 Map.read 字段中。
+
+```go
+type readOnly struct {
+	m       map[any]*entry
+	amended bool // dirty 中的key不在m中为true
+}
+```
+
+### 2.2.3 entry结构体
+
+```go
+type entry struct {
+	// p指向该条目存储的interface{}的值
+	//
+	// 如果p == nil，该条目已经被删除，同时m.dirty == nil或者m.dirty[key] 是 e.
+	//
+	// 如果 p == expunged, 该条目已经被删除，m.dirty != nil, 该条目不在m.dirty中
+	//
+	// 否则，如果m.dirty != nil, 且在m.dirty[key]中，那么该条目是有效的并记录在m.read.m[key]
+	//
+	// 一个元素可以用nil通过原子替换的方式进行删除，当下一次创建m.drity，会自动用expunged替换nil，不会将其复制到dirty中
+	p atomic.Pointer[any]
+}
+```
+
+## 主要方法
+
+#### Load
+
+Load根据key拿到map中存储的值，如果没有的话返回nil，
+ok代表map中是否有结果
+
+```go
+func (m *Map) loadReadOnly() readOnly {
+	if p := m.read.Load(); p != nil {
+		return *p
+	}
+	return readOnly{}
+}
+
+func (m *Map) Load(key any) (value any, ok bool) {
+	read := m.loadReadOnly()
+	e, ok := read.m[key]
+	if !ok && read.amended { // read中没有取到，且dirty map中的key没有在read中（即该值在dirty中，不在read中），则进行加锁去读
+		m.mu.Lock()
+		// Avoid reporting a spurious miss if m.dirty got promoted while we were
+		// blocked on m.mu. (If further loads of the same key will not miss, it's
+		// not worth copying the dirty map for this key.)
+		read = m.loadReadOnly()
+		e, ok = read.m[key]
+		if !ok && read.amended {
+			e, ok = m.dirty[key]
+			// Regardless of whether the entry was present, record a miss: this key
+			// will take the slow path until the dirty map is promoted to the read
+			// map.
+			m.missLocked()
+		}
+		m.mu.Unlock()
+	}
+	if !ok {
+		return nil, false
+	}
+	return e.load()
 }
 ```
 
