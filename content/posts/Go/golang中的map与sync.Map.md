@@ -211,8 +211,171 @@ func (m *Map) dirtyLocked() {
 		}
 	}
 }
+```
 
+### 2.3.3 LoadOrStore
 
+有则返回，没有则存储
+
+```go
+func (m *Map) LoadOrStore(key, value any) (actual any, loaded bool) {
+	// Avoid locking if it's a clean hit.
+	read := m.loadReadOnly()
+	if e, ok := read.m[key]; ok {
+		actual, loaded, ok := e.tryLoadOrStore(value)
+		if ok {
+			return actual, loaded
+		}
+	}
+
+	m.mu.Lock()
+	// 同Swap
+	read = m.loadReadOnly()
+	if e, ok := read.m[key]; ok {
+		if e.unexpungeLocked() {
+			m.dirty[key] = e
+		}
+		actual, loaded, _ = e.tryLoadOrStore(value)
+	} else if e, ok := m.dirty[key]; ok {
+		actual, loaded, _ = e.tryLoadOrStore(value)
+		m.missLocked()
+	} else {
+		if !read.amended {
+			// We're adding the first new key to the dirty map.
+			// Make sure it is allocated and mark the read-only map as incomplete.
+			m.dirtyLocked()
+			m.read.Store(&readOnly{m: read.m, amended: true})
+		}
+		m.dirty[key] = newEntry(value)
+		actual, loaded = value, false
+	}
+	m.mu.Unlock()
+
+	return actual, loaded
+}
+
+func (e *entry) tryLoadOrStore(i any) (actual any, loaded, ok bool) {
+	p := e.p.Load()
+	if p == expunged {
+		return nil, false, false
+	}
+	if p != nil {
+		return *p, true, true
+	}
+
+	// Copy the interface after the first load to make this method more amenable
+	// to escape analysis: if we hit the "load" path or the entry is expunged, we
+	// shouldn't bother heap-allocating.
+	ic := i
+	for {
+		if e.p.CompareAndSwap(nil, &ic) {
+			return i, false, true
+		}
+		p = e.p.Load()
+		if p == expunged {
+			return nil, false, false
+		}
+		if p != nil {
+			return *p, true, true
+		}
+	}
+}
+
+```
+
+### 2.3.4 LoadAndDelete
+
+根据key 删除元素，返回已删除元素的值
+
+```go
+func (m *Map) LoadAndDelete(key any) (value any, loaded bool) {
+	read := m.loadReadOnly()
+	// 先来read中找
+	e, ok := read.m[key]
+	// read中没有，先加锁，再尝试
+	// read中有，则直接标记为nil
+	if !ok && read.amended {
+		m.mu.Lock()
+		read = m.loadReadOnly()
+		e, ok = read.m[key]
+		if !ok && read.amended {
+			e, ok = m.dirty[key]
+			// 删除dirty中的元素
+			delete(m.dirty, key)
+			// Regardless of whether the entry was present, record a miss: this key
+			// will take the slow path until the dirty map is promoted to the read
+			// map.
+			m.missLocked()
+		}
+		m.mu.Unlock()
+	}
+	if ok {
+		// 把read中的元素标记为nil（delete）
+		return e.delete()
+	}
+	return nil, false
+}
+
+func (e *entry) delete() (value any, ok bool) {
+	for {
+		p := e.p.Load()
+		if p == nil || p == expunged {
+			return nil, false
+		}
+		// e是read中的entry，删除把p标记为nil
+		if e.p.CompareAndSwap(p, nil) {
+			return *p, true
+		}
+	}
+}
+
+```
+
+### 2.3.5 Delete
+
+删除元素
+
+```go
+func (m *Map) Delete(key any) {
+	m.LoadAndDelete(key)
+}
+```
+
+### 2.3.6 Range
+
+```go
+func (m *Map) Range(f func(key, value any) bool) {
+	// We need to be able to iterate over all of the keys that were already
+	// present at the start of the call to Range.
+	// If read.amended is false, then read.m satisfies that property without
+	// requiring us to hold m.mu for a long time.
+	read := m.loadReadOnly()
+	if read.amended {
+		// m.dirty contains keys not in read.m. Fortunately, Range is already O(N)
+		// (assuming the caller does not break out early), so a call to Range
+		// amortizes an entire copy of the map: we can promote the dirty copy
+		// immediately!
+		m.mu.Lock()
+		read = m.loadReadOnly()
+		if read.amended {
+			read = readOnly{m: m.dirty}
+			m.read.Store(&read)
+			m.dirty = nil
+			m.misses = 0
+		}
+		m.mu.Unlock()
+	}
+
+	for k, e := range read.m {
+		v, ok := e.load()
+		if !ok {
+			continue
+		}
+		if !f(k, v) {
+			break
+		}
+	}
+}
 ```
 
 - **并发安全，且虽然用到了锁，但是显著减少了锁的争用**。 sync.map出现之前，如果想要实现并发安全的map，只能自行构建，使用sync.Mutex或sync.RWMutex，再加上原生的map就可以轻松做到，sync.map也用到了锁，但是在尽可能的避免使用锁，因为使用锁意味着要把一些并行化的东西串行化，会降低程序性能，因此能用原子操作就不要用锁，但是原子操作局限性比较大，只能对一些基本的类型提供支持，在sync.map中将两者做了比较完美的结合。
