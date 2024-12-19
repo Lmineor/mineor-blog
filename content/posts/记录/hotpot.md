@@ -3,7 +3,7 @@ title: "火锅蘸碟"
 date: 2022-10-19
 draft: false
 tags : [                    # 文章所属标签
-    "火锅",
+    "记录",
 ]
 categories : [              # 文章所属标签
     "美食",

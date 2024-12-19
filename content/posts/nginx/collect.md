@@ -3,7 +3,7 @@ title: "收藏??就叫收藏吧"
 date: 2022-11-08
 draft: false
 tags : [                    # 文章所属标签
-    "collection",
+    "nginx",
 ]
 categories : [              # 文章所属标签
     "收藏",

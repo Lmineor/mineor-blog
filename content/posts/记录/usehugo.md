@@ -3,11 +3,7 @@ title: "Usehugo"
 date: 2022-10-12T20:53:43+08:00
 draft: false
 tags : [                    # 文章所属标签
-    "go",
-    "博客"
-]
-categories : [              # 文章所属标签
-    "go",
+    "记录",
 ]
 ---
 

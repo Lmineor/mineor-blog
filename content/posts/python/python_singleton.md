@@ -3,7 +3,7 @@ title: "python单例模式"
 date: 2022-10-23
 draft: false
 tags : [                    # 文章所属标签
-    "python",
+    "Python",
 ]
 categories : [              # 文章所属标签
     "技术",

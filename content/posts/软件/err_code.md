@@ -3,7 +3,7 @@ title: "错误码设计"
 date: 2022-11-08
 draft: false
 tags : [                    # 文章所属标签
-    "Application",
+    "软件",
 ]
 categories : [              # 文章所属标签
     "技术",

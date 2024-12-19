@@ -3,7 +3,7 @@ title: "个人IP记录"
 date: 2024-12-13
 draft: false
 tags : [                    # 文章所属标签
-    "嘿嘿嘿",
+    "记录",
 ]
 ---
 

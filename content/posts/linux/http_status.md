@@ -3,7 +3,7 @@ title: "http状态码"
 date: 2022-11-03
 draft: false
 tags : [                    # 文章所属标签
-    "Http",
+    "Linux",
 ]
 categories : [              # 文章所属标签
     "技术",

@@ -3,7 +3,7 @@ title: "python setup.py编写参考"
 date: 2023-12-07
 draft: false
 tags : [                    # 文章所属标签
-    "积累",
+    "软件",
 ]
 categories : [              # 文章所属标签
     "技术",

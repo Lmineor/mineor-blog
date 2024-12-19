@@ -4,7 +4,7 @@ date: 2022-11-04
 draft: false
 
 categories : [              # 文章所属标签
-    "阅读",
+    "记录",
 ]
 ---
 
