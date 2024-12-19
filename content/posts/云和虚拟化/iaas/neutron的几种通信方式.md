@@ -1,5 +1,5 @@
 ---
-title: "neutron几种通信方式"
+title: "一文说明白neutron用的几种通信方式"
 date: 2024-12-19
 draft: false
 tags : [                    # 文章所属标签
@@ -290,3 +290,33 @@ def clear(self):
     self._index = collections.defaultdict(dict)
 ```
 
+## 1.3 使用举例
+
+```py
+from neutron_lib.callbacks import registry
+
+...
+
+registry.subscribe(
+    after_router_added, resources.ROUTER, events.AFTER_CREATE)
+
+# after_router_added对应的callback
+# resources.ROUTER 对应的资源
+# events.AFTER_CREATE 对应的事件
+
+def after_router_added(resource, event, l3_agent, **kwargs):
+    router = kwargs['router']
+    proxy = l3_agent.metadata_driver
+    apply_metadata_nat_rules(router, proxy)
+    if not isinstance(router, ha_router.HaRouter):
+        proxy.spawn_monitored_metadata_proxy(
+            l3_agent.process_monitor,
+            router.ns_name,
+            proxy.metadata_port,
+            l3_agent.conf,
+            router_id=router.router_id)
+```
+
+这样就完成了对router资源的，after_create事件的订阅，即当router的after_create事件发生，则会回调到after_router_added函数
+
+其他事件也同理，就不举例了。
