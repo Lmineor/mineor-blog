@@ -7,6 +7,12 @@ tags : [                    # 文章所属标签
 ]
 ---
 
+neutron有如下通信方式：
+
+- callback（同步调用）
+- rpc(可以异步也可以同步)
+- rest(同步调用)
+
 # 1. callback
 
 代码位置： `neutron-lib/neutron_lib/callbacks`
