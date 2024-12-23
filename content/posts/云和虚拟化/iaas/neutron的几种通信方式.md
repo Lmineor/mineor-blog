@@ -7,21 +7,22 @@ tags : [                    # 文章所属标签
 ]
 ---
 
+# Neutron通信方式
 neutron有如下通信方式：
 
 - callback（同步调用）
 - rpc(可以异步也可以同步)
 - rest(同步调用)
 
-# 1. callback
+## 1. callback
 
 代码位置： `neutron-lib/neutron_lib/callbacks`
 
-## 1.1 通信方式：
+### 1.1 通信方式：
 
 进程内的同步调用
 
-## 1.2 原理
+### 1.2 原理
 
 ```py
 def _get_callback_manager():
@@ -37,7 +38,7 @@ def _get_callback_manager():
 
 下面看各个回调函数的具体的实现
 
-### 1.2.1 `subscribe`
+#### 1.2.1 `subscribe`
 
 订阅某个事件
 
@@ -91,7 +92,7 @@ def subscribe(self, callback, resource, event,
 
 总结： 这段代码主要用到了python的collections的defaultdict模块，简化了字典的操作。
 
-### 1.2.2 `unsubscribe`
+#### 1.2.2 `unsubscribe`
 
 取消某个事件的订阅
 
@@ -146,7 +147,7 @@ def _del_callback(self, callbacks_list, callback_id):
             break
 ```
 
-### 1.2.3 `unsubscribe_by_resource`
+#### 1.2.3 `unsubscribe_by_resource`
 
 取消某个资源的订阅
 
@@ -169,7 +170,7 @@ def unsubscribe_by_resource(self, callback, resource):
 ```
 
 
-### 1.2.4 `unsubscribe_all`
+#### 1.2.4 `unsubscribe_all`
 
 取消所有订阅
 
@@ -190,7 +191,7 @@ def unsubscribe_all(self, callback):
 ```
 
 
-### 1.2.5 `notify`
+#### 1.2.5 `notify`
 
 给所有的订阅发消息(根据resource和event来区分)
 
@@ -258,7 +259,7 @@ def _notify_loop(self, resource, event, trigger, **kwargs):
 
 ```
 
-### 1.2.6 `publish`
+#### 1.2.6 `publish`
 
 发布订阅，作用和notify相同
 
@@ -285,7 +286,7 @@ def publish(self, resource, event, trigger, payload=None):
 ```
 
 
-### 1.2.7 `clear`
+#### 1.2.7 `clear`
 
 把订阅相关的内存清楚掉
 
@@ -296,7 +297,7 @@ def clear(self):
     self._index = collections.defaultdict(dict)
 ```
 
-## 1.3 使用举例
+### 1.3 使用举例
 
 ```py
 from neutron_lib.callbacks import registry
@@ -327,7 +328,7 @@ def after_router_added(resource, event, l3_agent, **kwargs):
 
 其他事件也同理，就不举例了。
 
-# 2. RPC
+## 2. RPC
 
 代码位置：oslo_messaging/rpc/client.py
 
@@ -343,6 +344,6 @@ neutron的RPC主要用到了oslo_messaging的功能，那么就主要讲讲oslo_
 
 先占个坑，以后再挖一下这个rpc 🤣🤣🤣
 
-# 3. REST
+## 3. REST
 
 这就不多说了，基操
