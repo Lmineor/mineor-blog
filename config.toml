@@ -15,7 +15,7 @@ ignoreFiles = ['\\.obsidian/*']
 
 [services]
   [services.googleAnalytics]
-    googleAnalytics = G-K2WK1DC523
+    googleAnalytics = 'G-K2WK1DC523'
 
 [params]
     dark = false                             # 默认开启暗色主题
