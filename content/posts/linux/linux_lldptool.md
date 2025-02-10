@@ -1,5 +1,5 @@
 ---
-title: "linux_lldptool"
+title: "启用服务器上的lldp功能，向别人发送lldp信息"
 date: 2023-06-18
 draft: false
 tags : [                    # 文章所属标签

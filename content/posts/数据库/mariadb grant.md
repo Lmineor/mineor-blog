@@ -12,10 +12,10 @@ categories : [              # 文章所属标签
 
 ```bash
 $ mysql -u root -p
-Create the keystone database:
+# Create the keystone database:
 
 MariaDB [(none)]> CREATE DATABASE keystone;
-Grant proper access to the keystone database:
+# Grant proper access to the keystone database:
 
 GRANT ALL PRIVILEGES ON yong.* TO 'yong'@'localhost' IDENTIFIED BY '123456';
 GRANT ALL PRIVILEGES ON yong.* TO 'yong'@'%' IDENTIFIED BY '123456';
