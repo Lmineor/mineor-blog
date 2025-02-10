@@ -13,7 +13,7 @@ timeZone = 'Asia/Shanghai'
 
 ignoreFiles = ['\\.obsidian/*']
 
-[services]:
+[services]
   [services.googleAnalytics]
     googleAnalytics = G-K2WK1DC523
 
