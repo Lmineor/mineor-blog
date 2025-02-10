@@ -13,6 +13,10 @@ timeZone = 'Asia/Shanghai'
 
 ignoreFiles = ['\\.obsidian/*']
 
+[services]:
+  [services.googleAnalytics]
+    googleAnalytics = G-K2WK1DC523
+
 [params]
     dark = false                             # 默认开启暗色主题
     author = 'Lex'
@@ -124,6 +128,9 @@ ignoreFiles = ['\\.obsidian/*']
         theme = "noborder_light"
         crossorigin = "anonymous"
         lang = "zh-CN"
+
+    [params.gtag]
+     
 
 # 以下为 Markdown 解析擎的一些设置，
 # 建议保持不变
