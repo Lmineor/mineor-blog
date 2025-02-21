@@ -12,7 +12,15 @@ tags : [                    # 文章所属标签
 
 1. 安装python基础环境
 
-venv pip等
+```
+lex@debian:~/deepseek_project$ python3 -m venv ds_venv
+lex@debian:~/deepseek_project$ source ds_venv/bin/activate
+(ds_venv) lex@debian:~/deepseek_project$
+(ds_venv) lex@debian:~/deepseek_project$ pip install lmdeploy
+
+````
+
+
 
 2. 安装torch等
 conda create -n lmdeploy python=3.8 -y
