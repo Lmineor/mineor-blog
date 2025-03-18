@@ -1,7 +1,7 @@
 ---
 title: "GMP"
 date: 2023-11-12
-draft: false
+draft: true
 tags : [                    # 文章所属标签
     "Go", 
 ]
@@ -19,86 +19,138 @@ Go 为了提供更容易使用的并发方法，使用了 goroutine 和 channel�
 
 Go 中，协程被称为 goroutine，它非常轻量，一个 goroutine 只占几 KB，并且这几 KB 就足够 goroutine 运行完，这就能在有限的内存空间内支持大量 goroutine，支持了更多的并发。虽然一个 goroutine 的栈只占几 KB，但实际是可伸缩的，如果需要更多内容，runtime 会自动为 goroutine 分配。
 
+# GMP核心组件
+
+GMP模型由三个核心部分组成
+
+- G(Goroutine)：用户级的轻量级协程，存储执行栈、程序计数器（PC）和状态信息。
+- M(Machine)：操作系统线程（OS Thread）的抽象，由操作系统直接调度，负责执行G的代码
+- 
+
+Go 的 **GMP 模型**（Goroutine-M-Processor）是 Go 语言实现高并发的核心调度机制，它通过用户态的轻量级调度器管理 Goroutine，并高效复用操作系统的线程（Thread）。以下是详细解析，帮助你理解其工作原理。
+
+---
+
+### **1. GMP 核心组件**
+GMP 模型由三个核心部分组成：
+- **G（Goroutine）**：用户级的轻量级协程，存储执行栈、程序计数器（PC）和状态信息。
+- **M（Machine）**：操作系统线程（OS Thread）的抽象，由操作系统直接调度，负责执行 G 的代码。
+- **P（Processor）**：逻辑处理器，是 G 和 M 之间的协调者，每个 P 维护一个本地 Goroutine 队列（Local Queue）。
+
+<a class="out-link" href="http://ai.h3c.com/redirect?target=(https%3A%2F%2Fcdn.jsdelivr.net%2Fgh%2Fgeorge-wang-cy%2Fstatic-images%2Fgo-gmp-model.png)" title="外部资源链接" target="_blank">(https://cdn.jsdelivr.net/gh/george-wang-cy/static-images/go-gmp-model.png)</a>
+
+---
+
+### **2. GMP 调度器的设计目标**
+- **高并发**：支持百万级 Goroutine 并发。
+- **低延迟**：减少 Goroutine 切换和调度的开销。
+- **资源高效**：避免频繁创建/销毁线程，复用系统资源。
+
+---
+
+### **3. GMP 调度机制详解**
+
+#### **(1) **P（Processor）的作用**
+- P 是 Go 调度器的核心，**决定并发执行的并行度**（通过 `GOMAXPROCS` 设置 P 的数量，默认等于 CPU 核数）。
+- 每个 P 维护一个**本地运行队列（Local Queue）**，用于存放待执行的 Goroutine。
+- P 还负责管理一些关键资源（如网络轮询器、计时器等）。
+
+#### **(2) M（Machine）与线程绑定**
+- M 是操作系统线程的抽象，必须绑定一个 P 才能执行 G。
+- 如果 M 在执行 G 时发生阻塞（如系统调用），会释放绑定的 P，让其他 M 接管 P 继续执行其他 G。
+
+#### **(3) Goroutine 的调度流程**
+1. **创建 G**：当启动一个 Goroutine（`go func()`）时：
+   - G 会被放入当前 P 的本地队列。
+   - 如果本地队列已满，则放入全局队列（Global Queue）。
+
+2. **M 获取 G**：
+   - M 优先从绑定的 P 的本地队列获取 G。
+   - 如果本地队列为空，M 会尝试从全局队列窃取 G。
+   - 如果全局队列也为空，M 会从其他 P 的本地队列“偷取”（Work Stealing）一半的 G。
+
+3. **执行 G**：
+   - M 执行 G 的代码，直到 G 主动让出 CPU（如遇到 `channel` 阻塞、`time.Sleep` 等）。
+   - 当 G 阻塞时，M 会释放 P，进入休眠状态，等待被唤醒。
+
+4. **系统调用处理**：
+   - 如果 G 执行了阻塞式系统调用（如文件 I/O），Go 调度器会将 M 和 G 分离，并创建新的 M 接管 P 继续执行其他 G。
+   - 当系统调用返回，G 会被重新放入队列，M 则进入休眠或销毁。
+
+---
+
+### **4. 关键调度策略**
+
+#### **(1) 工作窃取（Work Stealing）**
+- 当 P 的本地队列为空时，会优先从全局队列获取 G，若全局队列也为空，则从其他 P 的本地队列窃取一半的 G。
+- **目的**：平衡各 P 的工作负载，避免“饥饿”。
+
+#### **(2) 抢占式调度（Preemption）**
+- Go 1.14 之前，Goroutine 只能通过函数调用（如 `channel` 操作）主动让出 CPU。
+- Go 1.14+ 引入了**基于信号的抢占式调度**，避免长时间运行的 Goroutine 阻塞其他任务。
+
+#### **(3) 自旋线程（Spinning Thread）**
+- 当 M 找不到可执行的 G 时，会短暂进入“自旋”状态（不释放 CPU），等待新的 G 加入队列。
+- **目的**：减少线程频繁休眠和唤醒的开销。
+
+---
+
+### **5. GMP 的运行示例**
+
+#### **场景 1：Goroutine 正常执行**
+1. 启动 4 个 P（假设 `GOMAXPROCS=4`），每个 P 绑定一个 M。
+2. 创建 1000 个 G，大部分进入各 P 的本地队列。
+3. 每个 M 从自己的 P 队列获取 G 并执行。
+
+#### **场景 2：Goroutine 阻塞**
+1. 某个 G 执行 `time.Sleep`，主动让出 CPU。
+2. M 将 G 放入“等待队列”，并继续执行其他 G。
+
+#### **场景 3：系统调用阻塞**
+1. 某个 G 执行阻塞式系统调用（如 `http.Get`）。
+2. M 会释放 P，由其他 M 接管 P 继续执行。
+3. 当系统调用完成，G 会被重新放入队列等待执行。
+
+---
+
+### **6. 为什么需要 P（Processor）？**
+- **解耦 M 和 G**：避免 M 直接管理 G，减少锁竞争。
+- **资源控制**：通过 `GOMAXPROCS` 限制并行度，防止过度消耗 CPU。
+- **本地队列**：每个 P 维护本地队列，减少全局队列的锁争用。
+
+---
+
+### **7. 可视化模型：餐厅比喻**
+- **G（顾客）**：需要被服务的请求。
+- **M（服务员）**：实际处理请求的人。
+- **P（餐台）**：服务员的工作台，存放待处理的订单（本地队列）。
+  - 服务员（M）从自己的餐台（P）优先取订单（G）。
+  - 如果自己的餐台空了，可以去其他餐台“偷”订单（Work Stealing）。
+
+---
+
+### **8. 总结：GMP 的优势**
+| **特性**            | **说明**                                                                 |
+|---------------------|-------------------------------------------------------------------------|
+| **高并发**          | 轻松支持百万级 Goroutine。                                               |
+| **低开销**          | 用户态调度，避免频繁的线程切换和锁竞争。                                  |
+| **负载均衡**        | Work Stealing 机制自动平衡各 P 的任务。                                   |
+| **高效系统调用**    | 阻塞时自动释放 P，由其他 M 继续执行任务。                                 |
+| **抢占式调度**      | 防止单个 Goroutine 长时间占用 CPU。                                      |
+
+---
+
+### **9. 实际开发中的注意事项**
+1. **设置 `GOMAXPROCS`**：通常设为 CPU 核数，但 I/O 密集型任务可适当增加。
+2. **避免阻塞 Goroutine**：减少长时间阻塞操作，改用异步 I/O 或 `context` 超时控制。
+3. **监控调度延迟**：使用 `go tool trace` 或 `pprof` 分析调度性能。
+
+通过 GMP 模型，Go 在用户态实现了高效的协程调度，完美平衡了并发性能和资源消耗，这是 Go 成为高并发语言的核心原因。
+
 Goroutine 特点：
 
 - 占用内存更小（2KB左右，系统线程需要1-8MB）
 - 调度更灵活（runtime 调度）
-
-# 调度器
-
-## 被废弃的 goroutine 调度器 - GM模型
-
-Go 目前使用的调度器是 2012 年重新设计的，因为之前的调度器性能存在问题，所以使用 4 年就被废弃了，那么我们先来分析一下被废弃的调度器是如何运作的？
-
-Go的调度程序是Go运行时的一个更重要的方面。运行时会跟踪每个Goroutine，并将安排它们在线程池中运行。goroutines与线程分离（解耦不强绑定），但运行于线程之上。如何有效地将goroutine调度到线程上对于go程序的高性能至关重要。
-
-Goroutines的背后逻辑是：它们能够同时运行，与线程类似，但相比之下非常轻量。因此，程序运行时，Goroutines的个数应该是远大于线程的个数的。
-
-同时多线程在程序中是很有必要的，因为当goroutine调用了一个阻塞的系统调用，比如sleep，那么运行这个goroutine的线程就会被阻塞，那么这时运行时至少应该再创建一个线程来运行别的没有阻塞的goroutine。线程这里可以创建不止一个，可以按需不断地创建，而活跃的线程（处于非阻塞状态的线程）的最大个数存储在变量GOMAXPROCS中。
-
-
-### 简要说明
-
-go运行时使用3个结构来跟踪所有成员来支持调度器的工作。
-
-G的结构：
-
-一个G代表一个goroutine，包含当前栈，当前状态和函数体。
-
-```c
-struct G
-{
-byte∗ stackguard; // stack guard information
-byte∗ stackbase; // base of stack
-byte∗ stack0; // current stack pointer
-byte∗ entry; // initial function
-void∗ param; // passed parameter on wakeup
-int16 status; // status
-int32 goid; // unique id
-M∗ lockedm; // used for locking M’s and G’s
-...
-}
-```
-
-M:
-
-一个M代表一个线程，包含全局G队列，当前G，内存等。
-
-```c
-struct M
-{
-G∗ curg; // current running goroutine
-int32 id; // unique id
-int32 locks ; // locks held by this M
-MCache ∗mcache; // cache for this thread
-G∗ lockedg; // used for locking M’s and G’s
-uintptr createstack [32]; // Stack that created this thread
-M∗ nextwaitm; // next M waiting for lock
-...
-};
-```
-
-SCHED:
-
-SCHED是全局单例，用来跟踪G队列和M队列，和维护其他一些信息。
-
-```c
-struct Sched {
-Lock; // global sched lock .
-// must be held to edit G or M queues
-G ∗gfree; // available g’ s ( status == Gdead)
-G ∗ghead; // g’ s waiting to run queue
-G ∗gtail; // tail of g’ s waiting to run queue
-int32 gwait; // number of g’s waiting to run
-int32 gcount; // number of g’s that are alive
-int32 grunning; // number of g’s running on cpu
-// or in syscall
-M ∗mhead; // m’s waiting for work
-int32 mwait; // number of m’s waiting for work
-int32 mcount; // number of m’s that have been created
-...
-};
-```
 
 GM调度模型：
 
