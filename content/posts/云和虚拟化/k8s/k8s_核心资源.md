@@ -16,112 +16,305 @@ tags:
 3. 提供了完备的集群安全机制。
 # Controller Manager
 
-智能系统和自动系统通常会通过一个操作系统来不断修正系统的工作状态。在k8s中，每个Controller都是这样一个操作系统，它们通过API Server提供的（`List-Watch`）接口实时监控集群中特定资源的状态变化，当发生各种故障导致某资源对象的状态发生变化时，Controller会尝试将其状态调整为期望状态。
+---
+title: 控制器
+content_type: concept
+weight: 30
+---
 
-Kubernetes 中的 `Controller Manager` 是集群管理中的核心组件之一，它是一个聚合了多个控制器功能的进程，运行在 Master 节点上，负责维护集群的**期望状态**（`desired state`）与**实际状态**（`current state`）的一致性。
+<!-- 
+title: Controllers
+content_type: concept
+weight: 30
+-->
 
-`Controller Manager`内部包含`Replication Controller`、`Node Controller`、`ResourceQuota Controller`、`Namespace Controller`、`ServiceAccount Controller`、`Token Controller`、`Service Controller`及`Endpoint Controoler`八种。而`Controller Manager`正式这些Controller的核心管理者。
+<!-- overview -->
+<!--
+In robotics and automation, a _control loop_ is
+a non-terminating loop that regulates the state of a system.
 
-## Replication Controller
+Here is one example of a control loop: a thermostat in a room.
 
-`Replication Controller` 核心作用确保任何时候集群中的RC关联的Pod副本数量都保持预设值，多退少补原则。需要注意的是，只有当重启策略是Always时，才起作用。
+When you set the temperature, that's telling the thermostat
+about your *desired state*. The actual room temperature is the
+*current state*. The thermostat acts to bring the current state
+closer to the desired state, by turning equipment on or off.
+-->
+在机器人技术和自动化领域，控制回路（Control Loop）是一个非终止回路，用于调节系统状态。
 
-最好不要越过RC直接创建Pod，因为RC会管理Pod的副本，这样可以提高系统的容灾能力。
+这是一个控制环的例子：房间里的温度自动调节器。
 
-- 确保在当前集群中有且仅有N个Pod实例，N是在RC中定义的Pod副本数量。
-- 调整RC的`spec.replicas`属性值来实现系统扩缩容。
-- 改变RC中的Pod模版（镜像版本）来实现系统的滚动升级。
+当你设置了温度，告诉了温度自动调节器你的**期望状态（Desired State）**。
+房间的实际温度是**当前状态（Current State）**。
+通过对设备的开关控制，温度自动调节器让其当前状态接近期望状态。
 
-`Replication Controller`使用场景：
+{{< glossary_definition term_id="controller" length="short">}}
 
-1. 重新调度
-2. 弹性伸缩
-3. 滚动更新
+<!-- body -->
+<!--
+## Controller pattern
 
-## Node Controller
+A controller tracks at least one Kubernetes resource type.
+These {{< glossary_tooltip text="objects" term_id="object" >}}
+have a spec field that represents the desired state. The
+controller(s) for that resource are responsible for making the current
+state come closer to that desired state.
 
-Kubelet 进程在启动时通过API Server注册自身的节点信息，并定时向API Server汇报状态，API Server收到这些信息后会通过到`ETCD`中。其信息包括节点健康状况、节点资源、节点名称、节点地址信息、操作系统版本、docker版本、kubelet版本等。
+The controller might carry the action out itself; more commonly, in Kubernetes,
+a controller will send messages to the
+{{< glossary_tooltip text="API server" term_id="kube-apiserver" >}} that have
+useful side effects. You'll see examples of this below.
 
-`Node Controller`通过API Server实时获取Node的相关信息，实现管理和监控集群中的各个Node的相关控制功能。
+{{< comment >}}
+Some built-in controllers, such as the namespace controller, act on objects
+that do not have a spec. For simplicity, this page omits explaining that
+detail.
+{{< /comment >}}
+-->
+## 控制器模式 {#controller-pattern}
 
-![10ee71341309e250f7de66bfb528c452.jpeg](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/39d99ac8bc8641e28444535a6770f48a~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=716&h=500&s=167987&e=png&b=fdfdfd)
+一个控制器至少追踪一种类型的 Kubernetes 资源。这些
+{{< glossary_tooltip text="对象" term_id="object" >}}
+有一个代表期望状态的 `spec` 字段。
+该资源的控制器负责确保其当前状态接近期望状态。
 
-**初始化与启动**：
+控制器可能会自行执行操作；在 Kubernetes 中更常见的是一个控制器会发送信息给
+{{< glossary_tooltip text="API 服务器" term_id="kube-apiserver" >}}，这会有副作用。
+具体可参看后文的例子。
 
-- `Node Controller` 是 Kubernetes `Controller Manager` 中的一部分，在 `Controller Manager` 启动时会被初始化和启动。
-- `Node Controlle`r 初始化时，会根据给定的配置构建自身的大结构体，完成必要的参数配置。
+{{< comment >}}
+一些内置的控制器，比如名字空间控制器，针对没有指定 `spec` 的对象。
+为了简单起见，本文没有详细介绍这些细节。
+{{< /comment >}}
 
-**监听节点状态**：
+<!--
+### Control via API server
 
-- `Node Controller` 通过 API Server 获取集群中所有 Node（节点）的实时状态信息。
-- 为 `nodeInformer` 配置回调函数（AddFunc, UpdateFunc, DeleteFunc），当有节点新增、更新或删除时，`Node Controller` 能够得到通知。
+The {{< glossary_tooltip term_id="job" >}} controller is an example of a
+Kubernetes built-in controller. Built-in controllers manage state by
+interacting with the cluster API server.
 
-**节点心跳监测**：
+Job is a Kubernetes resource that runs a
+{{< glossary_tooltip term_id="pod" >}}, or perhaps several Pods, to carry out
+a task and then stop.
 
-- `Node Controller` 通过检查节点发送的心跳（通常是通过节点定期更新其 Lease 对象实现）来确定节点是否正常工作。
-- 如果节点长时间未发送心跳，`Node Controller` 将判断节点可能已宕机或失去联系，并采取相应措施。
+(Once [scheduled](/docs/concepts/scheduling-eviction/), Pod objects become part of the
+desired state for a kubelet).
 
-**节点健康状态处理**：
+When the Job controller sees a new task it makes sure that, somewhere
+in your cluster, the kubelets on a set of Nodes are running the right
+number of Pods to get the work done.
+The Job controller does not run any Pods or containers
+itself. Instead, the Job controller tells the API server to create or remove
+Pods.
+Other components in the
+{{< glossary_tooltip text="control plane" term_id="control-plane" >}}
+act on the new information (there are new Pods to schedule and run),
+and eventually the work is done.
+-->
 
-- 当节点未响应或报告为非健康状态时，`Node Controller` 会先尝试标记节点为不可调度（Taint节点，防止新 Pod 被调度到该节点上）。
-- 若节点长时间未恢复，`Node Controller` 会进一步操作，如驱逐（Evict）节点上运行的所有 Pods，让它们在其他健康节点上重新调度。
+### 通过 API 服务器来控制 {#control-via-API-server}
 
-**节点清理**：
+{{< glossary_tooltip text="Job" term_id="job" >}} 控制器是一个 Kubernetes 内置控制器的例子。
+内置控制器通过和集群 API 服务器交互来管理状态。
 
-- 对于长时间未响应且确认无法恢复的节点，`Node Controller` 可能会从集群中彻底删除该节点记录，以便释放相关资源和名称空间。
+Job 是一种 Kubernetes 资源，它运行一个或者多个 {{< glossary_tooltip term_id="pod" >}}，
+来执行一个任务然后停止。
+（一旦[被调度了](/zh-cn/docs/concepts/scheduling-eviction/)，对 `kubelet` 来说 Pod
+对象就会变成期望状态的一部分）。
 
-**节点配置更新同步**：
+在集群中，当 Job 控制器拿到新任务时，它会保证一组 Node 节点上的 `kubelet`
+可以运行正确数量的 Pod 来完成工作。
+Job 控制器不会自己运行任何的 Pod 或者容器。Job 控制器是通知 API 服务器来创建或者移除 Pod。
+{{< glossary_tooltip text="控制面" term_id="control-plane" >}}中的其它组件
+根据新的消息作出反应（调度并运行新 Pod）并且最终完成工作。
 
-- 当节点的配置发生变化时，如节点容量（`capacity`）更新或标签（`labels`）变化，`Node Controller` 会确保集群中的相关信息得到及时更新和同步。
+<!--
+After you create a new Job, the desired state is for that Job to be completed.
+The Job controller makes the current state for that Job be nearer to your
+desired state: creating Pods that do the work you wanted for that Job, so that
+the Job is closer to completion.
 
-**与其它控制器协作**：
+Controllers also update the objects that configure them.
+For example: once the work is done for a Job, the Job controller
+updates that Job object to mark it `Finished`.
 
-- `Node Controller` 还与其他控制器交互，例如 `DaemonSet Controller`，确保守护进程集在每个节点上的正确部署和管理。
+(This is a bit like how some thermostats turn a light off to
+indicate that your room is now at the temperature you set).
+-->
+创建新 Job 后，所期望的状态就是完成这个 Job。Job 控制器会让 Job 的当前状态不断接近期望状态：创建为 Job 要完成工作所需要的 Pod，使 Job 的状态接近完成。
 
-## ResourceQuota Controller
+控制器也会更新配置对象。例如：一旦 Job 的工作完成了，Job 控制器会更新 Job 对象的状态为 `Finished`。
 
-资源配额管理确保了指定的资源对象在任何时候都不会超量占用系统物理资源，避免了由于某些业务进程的设计和实现的缺陷导致整个系统瘫痪。
+（这有点像温度自动调节器关闭了一个灯，以此来告诉你房间的温度现在到你设定的值了）。
 
-目前k8s支持如下三个层次的资源配额
+<!--
+### Direct control
 
-1. 容器级别
-2. Pod级别
-3. Namespace级别
-    - Pod数量
-    - Replication Controller数量
-    - Service数量
-    - ResourceQuota数量
-    - Secret数量
-    - PV数量
+In contrast with Job, some controllers need to make changes to
+things outside of your cluster.
 
-其实现方式通过 `Admission Control`（准入控制）来控制的，当前提供了两种方式的配额约束
+For example, if you use a control loop to make sure there
+are enough {{< glossary_tooltip text="Nodes" term_id="node" >}}
+in your cluster, then that controller needs something outside the
+current cluster to set up new Nodes when needed.
 
-- `LimitRanger`：作用于Pod和Container。
-- `ResourceQuota`：作用于Namespace。
+Controllers that interact with external state find their desired state from
+the API server, then communicate directly with an external system to bring
+the current state closer in line.
 
-如果Pod定义中声明了`LimitRanger`，则用户通过API Server请求创建或者修改资源时，`Admission Control`会计算当前配合的使用情况，如果不符合条件则创建失败。
+(There actually is a [controller](https://github.com/kubernetes/autoscaler/)
+that horizontally scales the nodes in your cluster.)
+-->
 
-对应定义了`ResourceQuota`的`Namespace`，`ResourceQuota Controller`组件会定义统计和生成该Namespace下的所有资源使用量，将统计结果写入ETCD。随后统计数据被`Admission Control`使用，以确保当前`Namespace`下的资源配额总量不会超过`ResourceQuota`中的限定值。
+### 直接控制 {#direct-control}
 
-![591aee0a0d9dda0033785236749fd260.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c453c601af4342638b2fe2b94039b8df~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=901&h=708&s=40500&e=png&b=fefdfd)
+相比 Job 控制器，有些控制器需要对集群外的一些东西进行修改。
 
-## Namespace Controller
+例如，如果你使用一个控制回路来保证集群中有足够的
+{{< glossary_tooltip text="节点" term_id="node" >}}，那么控制器就需要当前集群外的
+一些服务在需要时创建新节点。
 
-API Server可以创建新的Namespace并将其保存到`ETCD`中，`Namespace Controller`定时通过API Server读取这些信息。如果Namespace被API标记为删除，则将该Namespace状态设置成Terminating并保存到ETCD中。同时，Namespace Controller删除其下的所有资源，最后对Namespace执行`finalize`操作，删除`spec.finalizers` 域中的信息。
+和外部状态交互的控制器从 API 服务器获取到它想要的状态，然后直接和外部系统进行通信
+并使当前状态更接近期望状态。
 
-## Service Controller和Endpoints Controller
+（实际上有一个[控制器](https://github.com/kubernetes/autoscaler/)
+可以水平地扩展集群中的节点。）
 
-Service、Endpoints与Pod关系，如下图：
+<!--
+The important point here is that the controller makes some changes to bring about
+your desired state, and then reports the current state back to your cluster's API server.
+Other control loops can observe that reported data and take their own actions.
+-->
+这里的重点是，控制器做出了一些变更以使得事物更接近你的期望状态，
+之后将当前状态报告给集群的 API 服务器。
+其他控制回路可以观测到所汇报的数据的这种变化并采取其各自的行动。
 
-![9da1d529d73a95a83322b8aea10f5dbc.jpeg](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b5d9dd859adb49b18899fcc2c31611e5~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp#?w=500&h=537&s=20895&e=jpg&b=fcfcfc)
+<!--
+In the thermostat example, if the room is very cold then a different controller
+might also turn on a frost protection heater. With Kubernetes clusters, the control
+plane indirectly works with IP address management tools, storage services,
+cloud provider APIs, and other services by
+[extending Kubernetes](/docs/concepts/extend-kubernetes/) to implement that.
+-->
+在温度计的例子中，如果房间很冷，那么某个控制器可能还会启动一个防冻加热器。
+就 Kubernetes 集群而言，控制面间接地与 IP 地址管理工具、存储服务、云驱动
+APIs 以及其他服务协作，通过[扩展 Kubernetes](/zh-cn/docs/concepts/extend-kubernetes/)
+来实现这点。
 
-`Endpoints`表示一个Service对应的所有Pod副本的访问地址，`Endpoints Controller`负责生成和维护所有Endpoints对象的控制器。它负责监听Service和对应的Pod副本变化，如果监听到Service被删除，则删除和该Service同名的Endpoints对象。如果检测到被创建或则修改，则根据该Service信息获得相关的Pod列表，然后创建或者更新Endpoints对象。更新或者身处Pod，同理。
+<!--
+## Desired versus current state {#desired-vs-current}
 
-Endpoints对象在哪里被使用呢？答案是Node上的kube-proxy进程，它获取每个Endpoints，实现Service的负载均衡。
+Kubernetes takes a cloud-native view of systems, and is able to handle
+constant change.
 
-  
+Your cluster could be changing at any point as work happens and
+control loops automatically fix failures. This means that,
+potentially, your cluster never reaches a stable state.
 
-作者：翠竹静斋  
-链接：https://juejin.cn/post/7359138355180847131  
-来源：稀土掘金  
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+As long as the controllers for your cluster are running and able to make
+useful changes, it doesn't matter if the overall state is stable or not.
+-->
+## 期望状态与当前状态 {#desired-vs-current}
+
+Kubernetes 采用了系统的云原生视图，并且可以处理持续的变化。
+
+在任务执行时，集群随时都可能被修改，并且控制回路会自动修复故障。
+这意味着很可能集群永远不会达到稳定状态。
+
+只要集群中的控制器在运行并且进行有效的修改，整体状态的稳定与否是无关紧要的。
+
+<!--
+## Design
+
+As a tenet of its design, Kubernetes uses lots of controllers that each manage
+a particular aspect of cluster state. Most commonly, a particular control loop
+(controller) uses one kind of resource as its desired state, and has a different
+kind of resource that it manages to make that desired state happen. For example,
+a controller for Jobs tracks Job objects (to discover new work) and Pod objects
+(to run the Jobs, and then to see when the work is finished). In this case
+something else creates the Jobs, whereas the Job controller creates Pods.
+
+It's useful to have simple controllers rather than one, monolithic set of control
+loops that are interlinked. Controllers can fail, so Kubernetes is designed to
+allow for that.
+
+-->
+## 设计 {#design}
+
+作为设计原则之一，Kubernetes 使用了很多控制器，每个控制器管理集群状态的一个特定方面。
+最常见的一个特定的控制器使用一种类型的资源作为它的期望状态，
+控制器管理控制另外一种类型的资源向它的期望状态演化。
+例如，Job 的控制器跟踪 Job 对象（以发现新的任务）和 Pod 对象（以运行 Job，然后查看任务何时完成）。
+在这种情况下，新任务会创建 Job，而 Job 控制器会创建 Pod。
+
+使用简单的控制器而不是一组相互连接的单体控制回路是很有用的。
+控制器会失败，所以 Kubernetes 的设计正是考虑到了这一点。
+
+<!--
+There can be several controllers that create or update the same kind of object.
+Behind the scenes, Kubernetes controllers make sure that they only pay attention
+to the resources linked to their controlling resource.
+
+For example, you can have Deployments and Jobs; these both create Pods.
+The Job controller does not delete the Pods that your Deployment created,
+because there is information ({{< glossary_tooltip term_id="label" text="labels" >}})
+the controllers can use to tell those Pods apart.
+-->
+{{< note >}}
+可以有多个控制器来创建或者更新相同类型的对象。
+在后台，Kubernetes 控制器确保它们只关心与其控制资源相关联的资源。
+
+例如，你可以创建 Deployment 和 Job；它们都可以创建 Pod。
+Job 控制器不会删除 Deployment 所创建的 Pod，因为有信息
+（{{< glossary_tooltip term_id="label" text="标签" >}}）让控制器可以区分这些 Pod。
+{{< /note >}}
+
+<!--
+## Ways of running controllers {#running-controllers}
+
+Kubernetes comes with a set of built-in controllers that run inside
+the {{< glossary_tooltip term_id="kube-controller-manager" >}}. These
+built-in controllers provide important core behaviors.
+
+The Deployment controller and Job controller are examples of controllers that
+come as part of Kubernetes itself ("built-in" controllers).
+Kubernetes lets you run a resilient control plane, so that if any of the built-in
+controllers were to fail, another part of the control plane will take over the work.
+
+You can find controllers that run outside the control plane, to extend Kubernetes.
+Or, if you want, you can write a new controller yourself.
+You can run your own controller as a set of Pods,
+or externally to Kubernetes. What fits best will depend on what that particular
+controller does.
+-->
+## 运行控制器的方式 {#running-controllers}
+
+Kubernetes 内置一组控制器，运行在 {{< glossary_tooltip term_id="kube-controller-manager" >}} 内。
+这些内置的控制器提供了重要的核心功能。
+
+Deployment 控制器和 Job 控制器是 Kubernetes 内置控制器的典型例子。
+Kubernetes 允许你运行一个稳定的控制平面，这样即使某些内置控制器失败了，
+控制平面的其他部分会接替它们的工作。
+
+你会遇到某些控制器运行在控制面之外，用以扩展 Kubernetes。
+或者，如果你愿意，你也可以自己编写新控制器。
+你可以以一组 Pod 来运行你的控制器，或者运行在 Kubernetes 之外。
+最合适的方案取决于控制器所要执行的功能是什么。
+
+## {{% heading "whatsnext" %}}
+<!--
+* Read about the [Kubernetes control plane](/docs/concepts/architecture/#control-plane-components)
+* Discover some of the basic [Kubernetes objects](/docs/concepts/overview/working-with-objects/)
+* Learn more about the [Kubernetes API](/docs/concepts/overview/kubernetes-api/)
+* If you want to write your own controller, see
+  [Kubernetes extension patterns](/docs/concepts/extend-kubernetes/#extension-patterns)
+  and the [sample-controller](https://github.com/kubernetes/sample-controller) repository.
+-->
+* 阅读 [Kubernetes 控制平面组件](/zh-cn/docs/concepts/architecture/#control-plane-components)
+* 了解 [Kubernetes 对象](/zh-cn/docs/concepts/overview/working-with-objects/)
+  的一些基本知识
+* 进一步学习 [Kubernetes API](/zh-cn/docs/concepts/overview/kubernetes-api/)
+* 如果你想编写自己的控制器，请查看
+  [Kubernetes 扩展模式](/zh-cn/docs/concepts/extend-kubernetes/#extension-patterns)
+  以及[控制器样例](https://github.com/kubernetes/sample-controller)。
