@@ -16,70 +16,14 @@ tags:
 3. 提供了完备的集群安全机制。
 # Controller Manager
 
----
-title: 控制器
-content_type: concept
-weight: 30
----
+在 Kubernetes 中，控制器通过监控[集群](https://kubernetes.io/zh-cn/docs/reference/glossary/?all=true#term-cluster) 的公共状态，并致力于将当前状态转变为期望的状态。
 
-<!-- 
-title: Controllers
-content_type: concept
-weight: 30
--->
+## 控制器模式
 
-<!-- overview -->
-<!--
-In robotics and automation, a _control loop_ is
-a non-terminating loop that regulates the state of a system.
-
-Here is one example of a control loop: a thermostat in a room.
-
-When you set the temperature, that's telling the thermostat
-about your *desired state*. The actual room temperature is the
-*current state*. The thermostat acts to bring the current state
-closer to the desired state, by turning equipment on or off.
--->
-在机器人技术和自动化领域，控制回路（Control Loop）是一个非终止回路，用于调节系统状态。
-
-这是一个控制环的例子：房间里的温度自动调节器。
-
-当你设置了温度，告诉了温度自动调节器你的**期望状态（Desired State）**。
-房间的实际温度是**当前状态（Current State）**。
-通过对设备的开关控制，温度自动调节器让其当前状态接近期望状态。
-
-{{< glossary_definition term_id="controller" length="short">}}
-
-<!-- body -->
-<!--
-## Controller pattern
-
-A controller tracks at least one Kubernetes resource type.
-These {{< glossary_tooltip text="objects" term_id="object" >}}
-have a spec field that represents the desired state. The
-controller(s) for that resource are responsible for making the current
-state come closer to that desired state.
-
-The controller might carry the action out itself; more commonly, in Kubernetes,
-a controller will send messages to the
-{{< glossary_tooltip text="API server" term_id="kube-apiserver" >}} that have
-useful side effects. You'll see examples of this below.
-
-{{< comment >}}
-Some built-in controllers, such as the namespace controller, act on objects
-that do not have a spec. For simplicity, this page omits explaining that
-detail.
-{{< /comment >}}
--->
-## 控制器模式 {#controller-pattern}
-
-一个控制器至少追踪一种类型的 Kubernetes 资源。这些
-{{< glossary_tooltip text="对象" term_id="object" >}}
-有一个代表期望状态的 `spec` 字段。
+一个控制器至少追踪一种类型的 Kubernetes 资源。这些对象有一个代表期望状态的 `spec` 字段。
 该资源的控制器负责确保其当前状态接近期望状态。
 
-控制器可能会自行执行操作；在 Kubernetes 中更常见的是一个控制器会发送信息给
-{{< glossary_tooltip text="API 服务器" term_id="kube-apiserver" >}}，这会有副作用。
+控制器可能会自行执行操作；在 Kubernetes 中更常见的是一个控制器会发送信息给API 服务器（kube-apiserver），这会有副作用。
 具体可参看后文的例子。
 
 {{< comment >}}
@@ -251,17 +195,7 @@ allow for that.
 使用简单的控制器而不是一组相互连接的单体控制回路是很有用的。
 控制器会失败，所以 Kubernetes 的设计正是考虑到了这一点。
 
-<!--
-There can be several controllers that create or update the same kind of object.
-Behind the scenes, Kubernetes controllers make sure that they only pay attention
-to the resources linked to their controlling resource.
 
-For example, you can have Deployments and Jobs; these both create Pods.
-The Job controller does not delete the Pods that your Deployment created,
-because there is information ({{< glossary_tooltip term_id="label" text="labels" >}})
-the controllers can use to tell those Pods apart.
--->
-{{< note >}}
 可以有多个控制器来创建或者更新相同类型的对象。
 在后台，Kubernetes 控制器确保它们只关心与其控制资源相关联的资源。
 
@@ -269,25 +203,6 @@ the controllers can use to tell those Pods apart.
 Job 控制器不会删除 Deployment 所创建的 Pod，因为有信息
 （{{< glossary_tooltip term_id="label" text="标签" >}}）让控制器可以区分这些 Pod。
 {{< /note >}}
-
-<!--
-## Ways of running controllers {#running-controllers}
-
-Kubernetes comes with a set of built-in controllers that run inside
-the {{< glossary_tooltip term_id="kube-controller-manager" >}}. These
-built-in controllers provide important core behaviors.
-
-The Deployment controller and Job controller are examples of controllers that
-come as part of Kubernetes itself ("built-in" controllers).
-Kubernetes lets you run a resilient control plane, so that if any of the built-in
-controllers were to fail, another part of the control plane will take over the work.
-
-You can find controllers that run outside the control plane, to extend Kubernetes.
-Or, if you want, you can write a new controller yourself.
-You can run your own controller as a set of Pods,
-or externally to Kubernetes. What fits best will depend on what that particular
-controller does.
--->
 ## 运行控制器的方式 {#running-controllers}
 
 Kubernetes 内置一组控制器，运行在 {{< glossary_tooltip term_id="kube-controller-manager" >}} 内。
