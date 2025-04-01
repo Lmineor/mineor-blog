@@ -1,7 +1,7 @@
 ---
 title: "go和python的区别"
 date: 2022-11-18
-draft: true
+draft: false
 tags : [                    # 文章所属标签
     "Go",
     "Python"
