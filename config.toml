@@ -20,7 +20,7 @@ ignoreFiles = ['\\.obsidian/*']
 [params]
     dark = false                             # 默认开启暗色主题
     author = 'Lex'
-    slogan = 'Life should be interesting.'  # 'Life is just a joker.'
+    slogan = '凡世的喧嚣与明亮，世俗的快乐和幸福，如同清亮的溪涧，在风里，在我眼前，汨（mi）汨而过，温暖如同泉水一样涌出来。我没有奢望，我只要你快乐，不要悲伤。'  # 'Life is just a joker.'
     startDate = 2020                        # 'Copyright © 2016 - now'
     # 激活页面加载时的过渡动画
     hasActiveAnimate = true
