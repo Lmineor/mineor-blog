@@ -1,13 +1,11 @@
 ---
-title: "mysql巡检脚本"
+title: mysql巡检脚本
 date: 2023-06-18
 draft: false
-tags : [                    # 文章所属标签
-    "数据库",
-]
-categories : [              # 文章所属标签
-    "技术",
-]
+tags:
+  - 数据库
+categories:
+  - 技术
 ---
 
 ```bash
