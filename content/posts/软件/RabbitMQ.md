@@ -1,3 +1,11 @@
+---
+title: RabbitMQ
+date: 2025-04-06
+draft: 
+tags:
+  - MQ
+---
+
 # 什么是MQ
 
 MQ（Message Queue）消息队列，是基础数据结构中“先进先出”的一种数据机构。指把要传输的数据（消息）放在队列中，用队列机制来实现软件之间的通信——(生产者产生消息并把消息放入队列，然后由消费者去处理)。消费者可以到指定队列拉取消息，或者订阅相应的队列，由MQ服务端给其推送消息。
@@ -62,11 +70,11 @@ MQ 的常见问题有：
 
 假如生产者产生了 2 条消息：M1、M2，假定 M1 发送到 S1，M2 发送到 S2，如果要保证 M1 先于 M2 被消费，怎么做？
 
-![image.png](attachment:37a2008f-cc9d-4733-b2db-647cd31e677e:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/msg1.png)
 
 解决方案： 保证生产者 - MQServer - 消费者是一对一对一的关系
 
-![image.png](attachment:4acc4508-d412-48f2-a19d-26f0fb8201ba:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/msg2.png)
 
 缺陷：
 
@@ -115,7 +123,7 @@ RabbitMQ是一款开源的，Erlang编写的，消息中间件； 最大的特�
 
 ### 1.simple模式（即最简单的收发模式）
 
-![image.png](attachment:35f32e13-2f29-4160-bdab-82e027146f49:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/simple.png)
 
 消息产生消息，将消息放入队列
 
@@ -123,13 +131,13 @@ RabbitMQ是一款开源的，Erlang编写的，消息中间件； 最大的特�
 
 ### 2.work工作模式(资源的竞争)
 
-![image.png](attachment:e29acbe9-aea1-45fd-a8e2-24ca1545531e:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/work.png)
 
 消息产生者将消息放入队列消费者可以有多个,消费者1,消费者2同时监听同一个队列,消息被消费。C1 C2共同争抢当前的消息队列内容,谁先拿到谁负责消费消息(隐患：高并发情况下,默认会产生某一个消息被多个消费者共同使用,可以设置一个开关(syncronize) 保证一条消息只能被一个消费者使用)。
 
 ### 3.publish/subscribe发布订阅(共享资源)
 
-![image.png](attachment:ad7cfbeb-5df0-4783-a903-c6ed7a956e88:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/publish.png)
 
 每个消费者监听自己的队列；
 
@@ -137,7 +145,7 @@ RabbitMQ是一款开源的，Erlang编写的，消息中间件； 最大的特�
 
 ### 4.routing路由模式
 
-![image.png](attachment:57d51575-0f21-4c7e-8dcd-8cb4943026f1:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/routing.png)
 
 消息生产者将消息发送给交换机按照路由判断,路由是字符串(info) 当前产生的消息携带路由字符(对象的方法),交换机根据路由的key,只能匹配上路由key对应的消息队列,对应的消费者才能消费消息;
 
@@ -149,7 +157,7 @@ RabbitMQ是一款开源的，Erlang编写的，消息中间件； 最大的特�
 
 ### 5.topic 主题模式(路由模式的一种)
 
-![image.png](attachment:56bb901c-e9bf-4bff-b47b-dcfb0bed436f:image.png)
+![image.png](https://blog.mineor.xyz/images/soft/topic.png)
 
 星号井号代表通配符
 
@@ -219,7 +227,6 @@ RabbitMQ是一款开源的，Erlang编写的，消息中间件； 最大的特�
 # 如何保证RabbitMQ消息的可靠传输？
 
 消息不可靠的情况可能是消息丢失，劫持等原因；
-
 丢失又分为：生产者丢失消息、消息队列丢失消息、消费者丢失消息；
 
 **生产者丢失消息**
