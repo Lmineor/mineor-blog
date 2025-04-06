@@ -7,6 +7,13 @@ tags : [                    # 文章所属标签
     "CNI"
 ]
 ---
+# 从POD创建到调用到CNI插件的流程图
+
+从整个k8s集群来看
+![cni.png](https://blog.mineor.xyz/images/virt/cni1.png)
+
+kubelet一些关键函数说明
+![kubelet](https://blog.mineor.xyz/images/virt/cni2.png)
 
 > 参考文章：https://developer.aliyun.com/learning/course/572/detail/7866
 
