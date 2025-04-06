@@ -5,7 +5,7 @@ draft:
 tags:
   - Go
 ---
-[go中内存泄露的发现与排查 - ZhanLi - 博客园 (cnblogs.com)](https://www.cnblogs.com/ricklz/p/11262069.html)
+原文：[go中内存泄露的发现与排查 - ZhanLi - 博客园 (cnblogs.com)](https://www.cnblogs.com/ricklz/p/11262069.html)
 
 
 搬运的原文如下
