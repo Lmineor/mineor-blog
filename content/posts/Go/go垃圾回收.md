@@ -7,7 +7,7 @@ tags:
 ---
 原文参考：[Go语言的垃圾回收机制，图文并茂 一篇搞懂！_go垃圾回收-CSDN博客](https://blog.csdn.net/Shoulen/article/details/140456878)
 # Go垃圾回收
-
+ 
 ## 标记清除法
 Go 1.5之前使用的垃圾回收策略是标记清除法
 
