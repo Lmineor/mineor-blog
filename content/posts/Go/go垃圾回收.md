@@ -1,7 +1,7 @@
 ---
 title: go垃圾回收
 date: 2025-04-06
-draft: true
+draft: false
 tags:
   - Go
 ---
