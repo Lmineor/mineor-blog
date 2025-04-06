@@ -1,7 +1,7 @@
 ---
 title: go垃圾回收
 date: 2025-04-06
-draft: false
+draft: true
 tags:
   - Go
 ---
@@ -31,11 +31,13 @@ STW(Stop-The-World)，指的是系统在执行特定操作时，暂停所有应�
 标记清除法过程：
 
 1、STW暂停
+
 2、给所有可达对象做标记
+![gc2](https://blog.mineor.xyz/images/go/gc2.png)
 3、回收不可达的对象
+![gc3](https://blog.mineor.xyz/images/go/gc3.png)
 4、STW结束
-
-
+![gc4](https://blog.mineor.xyz/images/go/gc4.png)
 
 标记清除算法实现很简单，但是每次回收都要进行STW，性能很差
 # 三色标记法
@@ -47,6 +49,8 @@ STW(Stop-The-World)，指的是系统在执行特定操作时，暂停所有应�
 整个三色标记法流程分为五步：
 
 1、将所有对象标记为白色
+![gc1](https://blog.mineor.xyz/images/go/gc1.png)
+asted image 20250406180014.png]]
 2、将所有根对象标记为灰色
 3、遍历整个灰色对象集合，把能从灰色对象遍历到的白色对象标记为灰色，把自己标记为黑色（没有下游对象就直接把自己标为黑色）
 4、循环第三步，直到灰色集合为空
