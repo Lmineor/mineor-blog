@@ -11,13 +11,17 @@ tags:
 ### Cilium/eBPF
 
 - **数据平面**：Cilium基于eBPF技术构建数据平面，eBPF程序直接在内核中运行，无需频繁的内核-用户态切换，大大降低了延迟。它通过在内核中加载eBPF程序，实现了对网络数据包的高效处理，包括流量过滤、负载均衡等功能。eBPF程序可以动态地插入到内核的网络栈中，对网络流量进行实时监控和控制，提高了网络的灵活性和可编程性。
-    
+
 - **网络策略实现机制**：Cilium利用eBPF的高性能键值存储（eBPF Maps）来存储网络策略和端点状态。当网络数据包到达时，eBPF过滤器会根据预定义的策略规则对数据包进行匹配和处理。Cilium的网络策略是基于身份的，它通过分析容器的标签和身份信息来确定网络访问权限。这种基于身份的策略模型使得网络策略的配置更加灵活和直观，能够更好地适应容器化应用的动态变化。
-    
 
 ### Calico/BGP
 
 - **数据平面**：Calico提供了两种数据平面模式，一种是传统的基于iptables和BGP路由的模式，另一种是eBPF模式。在传统模式下，Calico通过iptables实现网络策略的执行，并利用BGP协议进行跨节点的路由传播。然而，随着集群规模的增大，iptables规则的复杂性会增加，导致性能下降。在eBPF模式下，Calico绕过了传统的iptables和kube-proxy，直接在内核中通过eBPF程序处理数据包，实现了零拷贝数据平面，避免了内核-用户态上下文切换，从而显著提高了性能。
+- 支持：
+	-  内置数据加密Built-in data encryption  
+	- IPAM功能Advanced IPAM management  
+	- overlay和非overlay选项  
+	- 数据平面可选：iptables, eBPF, Windows HNS, 或 VPP
     
 - **网络策略实现机制**：Calico的网络策略是基于Kubernetes的NetworkPolicy资源定义的。在传统模式下，Calico通过iptables规则来实现网络策略的执行，每个网络策略都会转换为一系列的iptables规则。而在eBPF模式下，Calico利用eBPF程序实现了更高效的网络策略执行。Calico的网络策略可以精确地控制容器之间的网络通信，支持细粒度的访问控制，包括基于IP地址、端口、协议等条件的策略规则。
     
