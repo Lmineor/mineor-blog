@@ -1,5 +1,5 @@
 ---
-title: Go中内存泄露的发现与排查
+title: Go pprof的使用
 date: 2025-04-06
 draft: 
 tags:
