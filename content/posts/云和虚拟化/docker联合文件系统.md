@@ -80,7 +80,7 @@ readme in lower
 ```
 
 - 文件只在upper中存在,则会修改merged中和upper中的文件
-- 文件只在lower中存在,则从lower中复制文件到upper，再修改upper中的复制品
+- 文件只在lower中存在,则从lower中复制文件到upper，再修改upper中的复制品（即CoW写时复制）
 ```bash
 (base) [root@lex learn_cgroup]# cat merged/books/readme.txt
 books readme in lower edit in merged
