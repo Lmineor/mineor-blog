@@ -15,12 +15,14 @@ Kubernetes（K8s）的基本工作原理围绕**自动化容器编排**展开，
 K8s 由两部分组成：
 
 1. **控制平面（Control Plane）**：大脑，负责决策和协调。
+
    - **API Server**：唯一与用户交互的入口，处理所有请求（如 `kubectl` 命令）。
    - **Scheduler**：决定将 Pod 分配到哪个节点。
    - **Controller Manager**：运行各种控制器（如 Deployment、Node 控制器），确保系统状态符合预期。
    - **etcd**：分布式键值数据库，存储集群所有状态数据。
 
 2. **工作节点（Worker Nodes）**：执行实际工作负载。
+
    - **kubelet**：节点上的“代理”，负责管理容器生命周期。
    - **kube-proxy**：处理网络规则（如 Service 的负载均衡）。
    - **容器运行时**（如 containerd、Docker）：真正运行容器的工具。
