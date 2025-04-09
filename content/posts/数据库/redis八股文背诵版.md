@@ -5,6 +5,9 @@ draft: false
 tags:
   - redis
 ---
+
+[《吊打面试官》系列-Redis基础](https://mp.weixin.qq.com/s/aOiadiWG2nNaZowmoDQPMQ)
+
 # Redis单线程原理
 
 首先必须明确，Redis单线程指的是网络请求模块使用了一个线程（，其他模块仍用了多个线程。并不是一个线程完成了所有功能。原理上，其采用了利用epoll的多路复用特性，因此可以采用单线程处理其网络请求。
