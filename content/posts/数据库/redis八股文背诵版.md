@@ -3,7 +3,6 @@ title: redis八股文背诵版
 date: 2025-04-05
 draft: false
 tags:
-  - 数据库
   - redis
 ---
 # Redis单线程原理
