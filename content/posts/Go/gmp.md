@@ -15,7 +15,7 @@ Go 的 GMP 模型（Goroutine-M-Processor）是 Go 语言实现高并发的核�
 
 ---
 
-![GMP](../../images/go/gmp.png)
+![GMP.png](https://blog.mineor.xyz/images/go/gmp.png)
 # **1. GMP 核心组件**
 
 GMP 模型由三个核心部分组成：
@@ -50,13 +50,13 @@ GMP 模型由三个核心部分组成：
 ## **(3) Goroutine 的调度流程**
 
 1. **创建 G**：当启动一个 Goroutine（`go func()`）时：
-   - G 会被放入当前 P 的本地队列。
-   - 如果本地队列已满，则放入全局队列（Global Queue）。
+   - G 会被放入当前 P 的**本地队列**。
+   - 如果本地队列已满，则放入**全局队列**（Global Queue）。其中全局队列有锁
 
 2. **M 获取 G**：
    - M 优先从绑定的 P 的本地队列获取 G。
    - 如果本地队列为空，M 会尝试从全局队列窃取 G。
-   - 如果全局队列也为空，M 会从其他 P 的本地队列“偷取”（Work Stealing）一半的 G。
+   - 如果全局队列也为空，M 会从其他 P 的本地队列“偷取”（Work Stealing）**一半**的 G。
 
 3. **执行 G**：
    - M 执行 G 的代码，直到 G 主动让出 CPU（如遇到 `channel` 阻塞、`time.Sleep` 等）。
