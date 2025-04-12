@@ -7,6 +7,11 @@ tags:
 ---
 # 内存泄露发生的可能情况
 
+简单归纳一下，还是“临时性”内存泄露和“永久性”内存泄露：
+
+临时性泄露，指的是该释放的内存资源没有及时释放，对应的内存资源仍然有机会在更晚些时候被释放，即便如此在内存资源紧张情况下，也会是个问题。这类主要是string、slice底层buffer的错误共享，导致无用数据对象无法及时释放，或者defer函数导致的资源没有及时释放。
+永久性泄露，指的是在进程后续生命周期内，泄露的内存都没有机会回收，如goroutine内部预期之外的 for-loop 或者 chan select-case 导致的无法退出的情况，导致协程栈及引用内存永久泄露问题。
+
 ## 暂时性内存泄露
 
 - 获取长字符串中的一段导致长字符串未释放
@@ -23,7 +28,20 @@ string相比于切片少了一个容量的cap字段，可以把string当成一�
 - Finalizer导致泄漏
 - Deferring Function Call导致泄漏
 
-以下分别说明发生的可能
+常见的内存泄露场景，go101进行了讨论，总结了如下几种：
+
+[Kind of memory leaking caused by substrings](https://go101.org/article/memory-leaking.html)
+[Kind of memory leaking caused by subslices](https://go101.org/article/memory-leaking.html)
+[Kind of memory leaking caused by not resetting pointers in lost slice elements](https://go101.org/article/memory-leaking.html)
+[Real memory leaking caused by hanging goroutines](https://go101.org/article/memory-leaking.html)
+[real memory leadking caused by not stopping time.Ticker values which are not used any more](https://go101.org/article/memory-leaking.html)
+[Real memory leaking caused by using finalizers improperly](https://go101.org/article/memory-leaking.html)
+[Kind of resource leaking by deferring function calls](https://go101.org/article/memory-leaking.html)
+
+
+
+
+# 下面以实际代码举了几个小例子
 
 ## 数组的错误使用
 由于数组是Golang的基本数据类型，每个数组占用不同的内存空间，生命周期互不干扰，很难出现内存泄漏的情况。但是数组作为形参传输时，遵循的是值拷贝，如果函数被多次调用且数组过大时，则会导致内存使用激增。
