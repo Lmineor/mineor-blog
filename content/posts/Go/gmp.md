@@ -15,6 +15,7 @@ Go 的 GMP 模型（Goroutine-M-Processor）是 Go 语言实现高并发的核�
 
 ---
 
+![GMP](../../images/go/gmp.png)
 # **1. GMP 核心组件**
 
 GMP 模型由三个核心部分组成：
