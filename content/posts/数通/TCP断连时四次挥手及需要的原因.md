@@ -1,5 +1,5 @@
 ---
-title: TCP断连时四次回收及需要的原因
+title: TCP断连时四次挥手及需要的原因
 date: 2025-04-06
 draft: false
 tags:
