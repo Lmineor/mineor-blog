@@ -72,7 +72,7 @@ func makechan(t *chantype, size int) *hchan {
 		// 元素包含指针.
 		// 如果元素包含指针，需要分别分配 hchan 和缓冲区。
 		// 使用 new 分配 hchan，然后使用 mallocgc 分配缓冲区。
-		// 这里是否用到了内存逃逸？
+		// 这里是否用到了内存逃逸=>都是分配在堆上，不会出现
 		c = new(hchan)
 		c.buf = mallocgc(mem, elem, true)
 	}
