@@ -42,33 +42,37 @@ func makechan(t *chantype, size int) *hchan {
 	if elem.size >= 1<<16 {
 		throw("makechan: invalid channel element type")
 	}
+	// 检查内存对齐
 	if hchanSize%maxAlign != 0 || elem.align > maxAlign {
 		throw("makechan: bad alignment")
 	}
 
+	// 计算缓冲区大小
 	mem, overflow := math.MulUintptr(elem.size, uintptr(size))
 	if overflow || mem > maxAlloc-hchanSize || size < 0 {
 		panic(plainError("makechan: size out of range"))
 	}
 
-	// Hchan does not contain pointers interesting for GC when elements stored in buf do not contain pointers.
-	// buf points into the same allocation, elemtype is persistent.
-	// SudoG's are referenced from their owning thread so they can't be collected.
-	// TODO(dvyukov,rlh): Rethink when collector can move allocated objects.
+	// 根据缓冲区大小和元素是否包含指针，选择不同的内存分配策略：
 	var c *hchan
 	switch {
 	case mem == 0:
-		// Queue or element size is zero.
+		// 队列大小或元素大小为零。
 		c = (*hchan)(mallocgc(hchanSize, nil, true))
 		// Race detector uses this location for synchronization.
 		c.buf = c.raceaddr()
 	case elem.ptrdata == 0:
-		// Elements do not contain pointers.
-		// Allocate hchan and buf in one call.
+		// 元素不包含指针
+		// 在一次调用中分配hchan和buf（指向环形队列的指针）
+		// 将hchan和buf分配到同一块内存中
 		c = (*hchan)(mallocgc(hchanSize+mem, nil, true))
+		// 将 c.buf 设置为 hchan 内存的末尾。
 		c.buf = add(unsafe.Pointer(c), hchanSize)
 	default:
-		// Elements contain pointers.
+		// 元素包含指针.
+		// 如果元素包含指针，需要分别分配 hchan 和缓冲区。
+		// 使用 new 分配 hchan，然后使用 mallocgc 分配缓冲区。
+		// 这里是否用到了内存逃逸？
 		c = new(hchan)
 		c.buf = mallocgc(mem, elem, true)
 	}
