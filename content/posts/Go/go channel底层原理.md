@@ -144,10 +144,12 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	lock(&c.lock)
 
 	if c.closed != 0 {
+		// 向已关闭的channel中发送数据触发异常
 		unlock(&c.lock)
 		panic(plainError("send on closed channel"))
 	}
 
+	// 如果有等待接收的队列不为空，那么把只直接发给队列中的sudog
 	if sg := c.recvq.dequeue(); sg != nil {
 		// Found a waiting receiver. We pass the value we want to send
 		// directly to the receiver, bypassing the channel buffer (if any).
