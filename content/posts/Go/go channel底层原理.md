@@ -88,3 +88,154 @@ func makechan(t *chantype, size int) *hchan {
 	return c
 }
 ```
+
+# chan接收数据的实现
+
+首先，c <- x 的实现是调用了`chansend1(c *hchan, elem unsafe.Pointer)`函数
+
+chansend1又调用了chansend函数
+
+```go
+// 实现 c <- x
+//
+//go:nosplit
+func chansend1(c *hchan, elem unsafe.Pointer) {
+	chansend(c, elem, true, getcallerpc())
+}
+```
+那么接下来看看chansend的实现
+
+## chansend的实现
+
+```go
+func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
+	// 如果channel已经关闭
+	if c == nil {
+		// channel已经关闭，且为非阻塞的，那么就直接return了，不做动作
+		if !block {
+			return false
+		}
+		// 阻塞场景的话，挂起当前goroutine，且
+		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
+		throw("unreachable")
+	}
+
+	if debugChan {
+		print("chansend: chan=", c, "\n")
+	}
+
+	if raceenabled {
+		racereadpc(c.raceaddr(), callerpc, abi.FuncPCABIInternal(chansend))
+	}
+
+	// Fast path: check for failed non-blocking operation without acquiring the lock.
+	//
+	// After observing that the channel is not closed, we observe that the channel is
+	// not ready for sending. Each of these observations is a single word-sized read
+	// (first c.closed and second full()).
+	// Because a closed channel cannot transition from 'ready for sending' to
+	// 'not ready for sending', even if the channel is closed between the two observations,
+	// they imply a moment between the two when the channel was both not yet closed
+	// and not ready for sending. We behave as if we observed the channel at that moment,
+	// and report that the send cannot proceed.
+	//
+	// It is okay if the reads are reordered here: if we observe that the channel is not
+	// ready for sending and then observe that it is not closed, that implies that the
+	// channel wasn't closed during the first observation. However, nothing here
+	// guarantees forward progress. We rely on the side effects of lock release in
+	// chanrecv() and closechan() to update this thread's view of c.closed and full().
+	if !block && c.closed == 0 && full(c) {
+		return false
+	}
+
+	var t0 int64
+	if blockprofilerate > 0 {
+		t0 = cputicks()
+	}
+
+	lock(&c.lock)
+
+	if c.closed != 0 {
+		unlock(&c.lock)
+		panic(plainError("send on closed channel"))
+	}
+
+	if sg := c.recvq.dequeue(); sg != nil {
+		// Found a waiting receiver. We pass the value we want to send
+		// directly to the receiver, bypassing the channel buffer (if any).
+		send(c, sg, ep, func() { unlock(&c.lock) }, 3)
+		return true
+	}
+
+	if c.qcount < c.dataqsiz {
+		// Space is available in the channel buffer. Enqueue the element to send.
+		qp := chanbuf(c, c.sendx)
+		if raceenabled {
+			racenotify(c, c.sendx, nil)
+		}
+		typedmemmove(c.elemtype, qp, ep)
+		c.sendx++
+		if c.sendx == c.dataqsiz {
+			c.sendx = 0
+		}
+		c.qcount++
+		unlock(&c.lock)
+		return true
+	}
+
+	if !block {
+		unlock(&c.lock)
+		return false
+	}
+
+	// Block on the channel. Some receiver will complete our operation for us.
+	gp := getg()
+	mysg := acquireSudog()
+	mysg.releasetime = 0
+	if t0 != 0 {
+		mysg.releasetime = -1
+	}
+	// No stack splits between assigning elem and enqueuing mysg
+	// on gp.waiting where copystack can find it.
+	mysg.elem = ep
+	mysg.waitlink = nil
+	mysg.g = gp
+	mysg.isSelect = false
+	mysg.c = c
+	gp.waiting = mysg
+	gp.param = nil
+	c.sendq.enqueue(mysg)
+	// Signal to anyone trying to shrink our stack that we're about
+	// to park on a channel. The window between when this G's status
+	// changes and when we set gp.activeStackChans is not safe for
+	// stack shrinking.
+	gp.parkingOnChan.Store(true)
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
+	// Ensure the value being sent is kept alive until the
+	// receiver copies it out. The sudog has a pointer to the
+	// stack object, but sudogs aren't considered as roots of the
+	// stack tracer.
+	KeepAlive(ep)
+
+	// someone woke us up.
+	if mysg != gp.waiting {
+		throw("G waiting list is corrupted")
+	}
+	gp.waiting = nil
+	gp.activeStackChans = false
+	closed := !mysg.success
+	gp.param = nil
+	if mysg.releasetime > 0 {
+		blockevent(mysg.releasetime-t0, 2)
+	}
+	mysg.c = nil
+	releaseSudog(mysg)
+	if closed {
+		if c.closed == 0 {
+			throw("chansend: spurious wakeup")
+		}
+		panic(plainError("send on closed channel"))
+	}
+	return true
+}
+```
