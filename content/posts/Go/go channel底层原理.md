@@ -115,7 +115,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		if !block {
 			return false
 		}
-		// 阻塞场景的话，挂起当前goroutine，且
+		// 阻塞的话，挂起当前goroutine，将当前goroutine置为waiting状态
 		gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
 		throw("unreachable")
 	}
