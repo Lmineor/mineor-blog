@@ -128,23 +128,10 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		racereadpc(c.raceaddr(), callerpc, abi.FuncPCABIInternal(chansend))
 	}
 
-	// Fast path: check for failed non-blocking operation without acquiring the lock.
-	//
-	// After observing that the channel is not closed, we observe that the channel is
-	// not ready for sending. Each of these observations is a single word-sized read
-	// (first c.closed and second full()).
-	// Because a closed channel cannot transition from 'ready for sending' to
-	// 'not ready for sending', even if the channel is closed between the two observations,
-	// they imply a moment between the two when the channel was both not yet closed
-	// and not ready for sending. We behave as if we observed the channel at that moment,
-	// and report that the send cannot proceed.
-	//
-	// It is okay if the reads are reordered here: if we observe that the channel is not
-	// ready for sending and then observe that it is not closed, that implies that the
-	// channel wasn't closed during the first observation. However, nothing here
-	// guarantees forward progress. We rely on the side effects of lock release in
-	// chanrecv() and closechan() to update this thread's view of c.closed and full().
-	// 非阻塞，chan未关闭，等待接收的goroutine队列
+	// 非阻塞，channel未关闭，channel为满的，则发送不成功
+	// 怎么理解channel为满的呢，
+	// 如果环形队列的大小为0，等待接收的goroutine队列第一个指向nil，那么就可以理解为满的
+	// 当前队列中的元素数量==环形队列的大小，那么也可以理解为满的
 	if !block && c.closed == 0 && full(c) {
 		return false
 	}
