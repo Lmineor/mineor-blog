@@ -144,6 +144,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	// channel wasn't closed during the first observation. However, nothing here
 	// guarantees forward progress. We rely on the side effects of lock release in
 	// chanrecv() and closechan() to update this thread's view of c.closed and full().
+	// 非阻塞，chan未关闭，等待接收的goroutine队列
 	if !block && c.closed == 0 && full(c) {
 		return false
 	}
