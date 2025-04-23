@@ -381,7 +381,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 }
 ```
 
-代码大概流程就是这样，考虑几种场景
+代码大概流程就是这样，考虑几种特殊场景
 ## 几种场景
 
 ### 场景1：有缓冲的通道，执行 c <- x这样的操作，如果c的队列已经满了
@@ -423,6 +423,7 @@ if sg := c.sendq.dequeue(); sg != nil {
 某一个时刻有个`g2`执行了`<-c`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`recv(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个revc函数
 ```go
 // 瞧一瞧recv函数
+// sg就是发送者
 func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	if c.dataqsiz == 0 {
 		// 无缓冲chan
@@ -501,6 +502,7 @@ gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGo
 if sg := c.recvq.dequeue(); sg != nil {
 	// Found a waiting receiver. We pass the value we want to send
 	// directly to the receiver, bypassing the channel buffer (if any).
+	// 从一堆等待的接收队列中取一个（head)
 	send(c, sg, ep, func() { unlock(&c.lock) }, 3)
 	return true
 }
@@ -508,5 +510,41 @@ if sg := c.recvq.dequeue(); sg != nil {
 某一个时刻有个`g2`执行了`c<-x`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`send(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个send函数
 ```go
 // 仔细瞧瞧send函数
-
+func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
+	if raceenabled {
+		if c.dataqsiz == 0 {
+			racesync(c, sg)
+		} else {
+			// Pretend we go through the buffer, even though
+			// we copy directly. Note that we need to increment
+			// the head/tail locations only when raceenabled.
+			racenotify(c, c.recvx, nil)
+			racenotify(c, c.recvx, sg)
+			c.recvx++
+			if c.recvx == c.dataqsiz {
+				c.recvx = 0
+			}
+			c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+		}
+	}
+	if sg.elem != nil {
+		// 把需要发送的值发送给sg，也就是等待队列中的goroutine
+		sendDirect(c.elemtype, sg, ep)
+		sg.elem = nil
+	}
+	gp := sg.g // 也就是g1
+	unlockf()
+	gp.param = unsafe.Pointer(sg)
+	sg.success = true
+	if sg.releasetime != 0 {
+		sg.releasetime = cputicks()
+	}
+	// 也是通过goready把g1唤醒了
+	goready(gp, skip+1)
+}
 ```
+这样子就实现了`g1`调用`<- c`但c的队列为空以后发送者`g2`出现拯救了`g1`的过程
+
+
+### 场景3：无缓冲的通道，执行 c <- x这样的操作
+和场景1类似，只是在g2执行recv的时候直接把g1的x复制给了g2，后续唤醒流程一样
