@@ -495,7 +495,7 @@ c.recvq.enqueue(mysg)
 gp.parkingOnChan.Store(true)
 gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
 ```
-把mysg加入到接收队列中，然后让gmp调度挂起当前g1，那么什么时候能继续执行这个g1呢？
+把mysg加入到接收队列中，然后让[gmp](./gmp.md)调度挂起当前g1，那么什么时候能继续执行这个g1呢？
 同理，看chansend的函数，可以看到如下代码
 ```go
 // 如果有等待接收的队列不为空，那么把只直接发给队列中的sudog
@@ -510,6 +510,7 @@ if sg := c.recvq.dequeue(); sg != nil {
 某一个时刻有个`g2`执行了`c<-x`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`send(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个send函数
 ```go
 // 仔细瞧瞧send函数
+// sg 就是接收者
 func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	if raceenabled {
 		if c.dataqsiz == 0 {
@@ -546,5 +547,11 @@ func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 这样子就实现了`g1`调用`<- c`但c的队列为空以后发送者`g2`出现拯救了`g1`的过程
 
 
-### 场景3：无缓冲的通道，执行 c <- x这样的操作
-和场景1类似，只是在g2执行recv的时候直接把g1的x复制给了g2，后续唤醒流程一样
+### 场景3：无缓冲的通道，执行 `c <- x`这样的操作
+和场景1类似，只是在`g2`执行`recv`的时候直接把`g1`的`x`复制给了`g2，后续唤醒流程一样
+
+### 场景4：无缓冲的通道，执行 `<-c`这样的操作
+和场景2类似，只是在`g2`执行`send`的时候直接把`g2`的`x`复制给了`g1`，后续唤醒流程一样
+
+
+综上，就是go语言的chan的底层原理了，谷歌这帮人太6了
