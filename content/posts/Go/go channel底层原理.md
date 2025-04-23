@@ -299,7 +299,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		}
 		// The channel has been closed, but the channel's buffer have data.
 	} else {
-		// Just found waiting sender with not closed.
+		// 从等待发送的goroutine队列弹出一个sudog，直接传递给接收者
 		if sg := c.sendq.dequeue(); sg != nil {
 			// Found a waiting sender. If buffer is size 0, receive value
 			// directly from sender. Otherwise, receive from head of queue
@@ -310,6 +310,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		}
 	}
 
+	// 环形队列中的元素个数大于0
 	if c.qcount > 0 {
 		// Receive directly from queue
 		qp := chanbuf(c, c.recvx)
@@ -321,6 +322,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		}
 		typedmemclr(c.elemtype, qp)
 		c.recvx++
+		// 环形队列再次指向队列头部
 		if c.recvx == c.dataqsiz {
 			c.recvx = 0
 		}
@@ -329,12 +331,14 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		return true, true
 	}
 
+	// 非阻塞场景，则直接返回
 	if !block {
 		unlock(&c.lock)
 		return false, false
 	}
 
 	// no sender available: block on this channel.
+	// 队列中没有元素，开始阻塞
 	gp := getg()
 	mysg := acquireSudog()
 	mysg.releasetime = 0
@@ -350,6 +354,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	mysg.isSelect = false
 	mysg.c = c
 	gp.param = nil
+	// 将包含当前gorouine的sudog放到等待接收的队列中
 	c.recvq.enqueue(mysg)
 	// Signal to anyone trying to shrink our stack that we're about
 	// to park on a channel. The window between when this G's status
@@ -358,7 +363,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	gp.parkingOnChan.Store(true)
 	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
 
-	// someone woke us up
+	// 等待接收的队列被唤醒
 	if mysg != gp.waiting {
 		throw("G waiting list is corrupted")
 	}
