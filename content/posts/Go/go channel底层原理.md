@@ -384,7 +384,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 代码大概流程就是这样，考虑几种场景
 ## 几种场景
 
-### 有缓冲的通道，执行 c <- x这样的操作，如果c的队列已经满了
+### 场景1：有缓冲的通道，执行 c <- x这样的操作，如果c的队列已经满了
 
 c的队列已有数据，队列空间为4
 ```bash
@@ -397,7 +397,7 @@ c.队列 = [1,2,3,4]
 查看chansend函数，可以发现如下代码
 ```go
 ...
-# mysg已经是包含当前操作数据sudog了
+// mysg已经是包含当前操作数据sudog了
 c.sendq.enqueue(mysg)
 gp.parkingOnChan.Store(true)
 gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
@@ -418,10 +418,11 @@ if sg := c.sendq.dequeue(); sg != nil {
 	recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
 	return true, true
 }
-// 瞧一瞧recv函数
 ```
+
 某一个时刻有个`g2`执行了`<-c`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`recv(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个revc函数
 ```go
+// 瞧一瞧recv函数
 func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	if c.dataqsiz == 0 {
 		// 无缓冲chan
@@ -454,6 +455,7 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 			c.recvx = 0
 		}
 		c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+		// 队列[2,3,4,5]
 	}
 	sg.elem = nil
 	// 还记得chansend中的这一堆操作吗
@@ -464,14 +466,47 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	// mysg.c = c
 	// gp.waiting = mysg
 	// gp.param = nil
-	gp := sg.g // 找出来当前阻塞的g（有缓冲队列的情况下不是上文的g1)
+	gp := sg.g // 当前阻塞的g1
 	unlockf()
 	gp.param = unsafe.Pointer(sg)
 	sg.success = true
 	if sg.releasetime != 0 {
 		sg.releasetime = cputicks()
 	}
-	// 标记当前的g可以运行_Grunnable，等待被gmp调度（按照先放到p的本地队列中，如果满的话，这块就不赘述了，可以参考下go的gmp模型
+	// 标记当前的g1可以运行_Grunnable，等待被gmp调度（按照先放到p的本地队列中，如果满的话，这块就不赘述了，可以参考下go的gmp模型
 	goready(gp, skip+1)
 }
+```
+这样子就实现了`g1`调用`c <- x`满了以后接受者`g2`出现拯救了`g1`的过程
+
+### 场景2：有缓冲的通道，执行 `<- c`这样的操作，如果c的队列已经空了
+
+`g1`执行`<- c`但c的队列空了
+查看chanrecv函数可以发现这段代码
+```go
+// 将包含当前gorouine的sudog放到等待接收的队列中
+// mysg已经是包含当前需要接收数据的对象了
+c.recvq.enqueue(mysg)
+// Signal to anyone trying to shrink our stack that we're about
+// to park on a channel. The window between when this G's status
+// changes and when we set gp.activeStackChans is not safe for
+// stack shrinking.
+gp.parkingOnChan.Store(true)
+gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
+```
+把mysg加入到接收队列中，然后让gmp调度挂起当前g1，那么什么时候能继续执行这个g1呢？
+同理，看chansend的函数，可以看到如下代码
+```go
+// 如果有等待接收的队列不为空，那么把只直接发给队列中的sudog
+if sg := c.recvq.dequeue(); sg != nil {
+	// Found a waiting receiver. We pass the value we want to send
+	// directly to the receiver, bypassing the channel buffer (if any).
+	send(c, sg, ep, func() { unlock(&c.lock) }, 3)
+	return true
+}
+```
+某一个时刻有个`g2`执行了`c<-x`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`send(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个send函数
+```go
+// 仔细瞧瞧send函数
+
 ```
