@@ -406,12 +406,61 @@ gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlo
 
 看chanrecv的函数，可以看到如下代码
 ```go
+// sendq也就是说send的时候等待队列中数据
 if sg := c.sendq.dequeue(); sg != nil {
-		// Found a waiting sender. If buffer is size 0, receive value
-		// directly from sender. Otherwise, receive from head of queue
-		// and add sender's value to the tail of the queue (both map to
-		// the same buffer slot because the queue is full).
-		recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
-		return true, true
+	// Found a waiting sender. If buffer is size 0, receive value
+	// directly from sender. Otherwise, receive from head of queue
+	// and add sender's value to the tail of the queue (both map to
+	// the same buffer slot because the queue is full).
+	// buffer的大小为0（无缓冲队列）--> 直接sendq中取一个值
+	// buffer的大小不为0（有缓冲队列）--> 在sendq中去header的值，然后把sender加到等待队列的末尾）
+	recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+	return true, true
+}
+// 瞧一瞧recv函数
+```
+某一个时刻有个`g2`执行了`<-c`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`recv(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个revc函数
+```go
+func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
+	if c.dataqsiz == 0 {
+		if raceenabled {
+			racesync(c, sg)
 		}
+		if ep != nil {
+			// copy data from sender
+			recvDirect(c.elemtype, sg, ep)
+		}
+	} else {
+		// Queue is full. Take the item at the
+		// head of the queue. Make the sender enqueue
+		// its item at the tail of the queue. Since the
+		// queue is full, those are both the same slot.
+		qp := chanbuf(c, c.recvx)
+		if raceenabled {
+			racenotify(c, c.recvx, nil)
+			racenotify(c, c.recvx, sg)
+		}
+		// copy data from queue to receiver
+		if ep != nil {
+			typedmemmove(c.elemtype, ep, qp)
+		}
+		// copy data from sender to queue
+		typedmemmove(c.elemtype, qp, sg.elem)
+		c.recvx++
+		if c.recvx == c.dataqsiz {
+			c.recvx = 0
+		}
+		c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+	}
+	sg.elem = nil
+	// 还记得
+	gp := sg.g
+	unlockf()
+	gp.param = unsafe.Pointer(sg)
+	sg.success = true
+	if sg.releasetime != 0 {
+		sg.releasetime = cputicks()
+	}
+	goready(gp, skip+1)
+}
 ```
