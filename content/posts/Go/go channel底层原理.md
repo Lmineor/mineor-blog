@@ -187,6 +187,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 	// No stack splits between assigning elem and enqueuing mysg
 	// on gp.waiting where copystack can find it.
+	// 下面这一堆后面会用
 	mysg.elem = ep
 	mysg.waitlink = nil
 	mysg.g = gp
@@ -383,7 +384,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 代码大概流程就是这样，考虑几种场景
 ## 几种场景
 
-### 执行 c <- x这样的操作，如果c的队列已经满了
+### 有缓冲的通道，执行 c <- x这样的操作，如果c的队列已经满了
 
 c的队列已有数据，队列空间为4
 ```bash
@@ -423,6 +424,7 @@ if sg := c.sendq.dequeue(); sg != nil {
 ```go
 func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	if c.dataqsiz == 0 {
+		// 无缓冲chan
 		if raceenabled {
 			racesync(c, sg)
 		}
@@ -431,6 +433,7 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 			recvDirect(c.elemtype, sg, ep)
 		}
 	} else {
+		// 有缓冲的chan
 		// Queue is full. Take the item at the
 		// head of the queue. Make the sender enqueue
 		// its item at the tail of the queue. Since the
@@ -453,14 +456,22 @@ func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 		c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
 	}
 	sg.elem = nil
-	// 还记得
-	gp := sg.g
+	// 还记得chansend中的这一堆操作吗
+	// mysg.elem = ep
+	// mysg.waitlink = nil
+	// mysg.g = gp
+	// mysg.isSelect = false
+	// mysg.c = c
+	// gp.waiting = mysg
+	// gp.param = nil
+	gp := sg.g // 找出来当前阻塞的g（有缓冲队列的情况下不是上文的g1)
 	unlockf()
 	gp.param = unsafe.Pointer(sg)
 	sg.success = true
 	if sg.releasetime != 0 {
 		sg.releasetime = cputicks()
 	}
+	// 标记当前的g可以运行_Grunnable，等待被gmp调度（按照先放到p的本地队列中，如果满的话，这块就不赘述了，可以参考下go的gmp模型
 	goready(gp, skip+1)
 }
 ```
