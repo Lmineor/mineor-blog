@@ -140,7 +140,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if blockprofilerate > 0 {
 		t0 = cputicks()
 	}
-
+	// 需要上锁
 	lock(&c.lock)
 
 	if c.closed != 0 {
@@ -228,4 +228,17 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 	return true
 }
+```
+
+在看接收操作
+```go
+// 实现代码中的 <- c 操作
+func chanrecv1(c *hchan, elem unsafe.Pointer) {
+	chanrecv(c, elem, true)
+}
+```
+
+再来看chanrecv的具体实现
+```go
+
 ```
