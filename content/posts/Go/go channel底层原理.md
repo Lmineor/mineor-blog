@@ -381,4 +381,37 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 ```
 
 代码大概流程就是这样，考虑几种场景
-1. 执行 c <- x这样的操作，如果c的队列已经满了，
+## 几种场景
+
+### 执行 c <- x这样的操作，如果c的队列已经满了
+
+c的队列已有数据，队列空间为4
+```bash
+c.队列 = [1,2,3,4]
+```
+
+这是goroutine `g1`执行`c <- 5`
+`c.队列`满了，`5`进不去
+
+查看chansend函数，可以发现如下代码
+```go
+...
+# mysg已经是包含当前操作数据sudog了
+c.sendq.enqueue(mysg)
+gp.parkingOnChan.Store(true)
+gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
+...
+```
+把mysg加入到发送队列中，然后让gmp调度挂起当前g1，那么什么时候能继续执行这个g1呢
+
+看chanrecv的函数，可以看到如下代码
+```go
+if sg := c.sendq.dequeue(); sg != nil {
+		// Found a waiting sender. If buffer is size 0, receive value
+		// directly from sender. Otherwise, receive from head of queue
+		// and add sender's value to the tail of the queue (both map to
+		// the same buffer slot because the queue is full).
+		recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+		return true, true
+		}
+```
