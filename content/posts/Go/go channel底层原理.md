@@ -299,7 +299,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		}
 		// The channel has been closed, but the channel's buffer have data.
 	} else {
-		// 从等待发送的goroutine队列弹出一个sudog，直接传递给接收者
+		// 从等待发送的goroutine队列弹出一个sudog，直接传递给接收者  sendq
 		if sg := c.sendq.dequeue(); sg != nil {
 			// Found a waiting sender. If buffer is size 0, receive value
 			// directly from sender. Otherwise, receive from head of queue
@@ -338,7 +338,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	}
 
 	// no sender available: block on this channel.
-	// 队列中没有元素，开始阻塞
+	// 队列中没有元素，开始阻塞，没人发送数据
 	gp := getg()
 	mysg := acquireSudog()
 	mysg.releasetime = 0
@@ -379,3 +379,6 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 	return true, success
 }
 ```
+
+代码大概流程就是这样，考虑几种场景
+1. 执行 c <- x这样的操作，如果c的队列已经满了，
