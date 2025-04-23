@@ -262,7 +262,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 			// 通过原子操作判断如果当前队列没有关闭，则直接返回false，false
 			return
 		}
-		// 再次检查发送队列是否为空（有可能在上面检查完为空之后队列关闭之间发送了数据）
+		// 再次检查发送队列是否为空（有可能在上面检查完为空之后和检查队列关闭之间发送了数据）
 		if empty(c) {
 			// The channel is irreversibly closed and empty.
 			if raceenabled {
@@ -271,6 +271,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 			if ep != nil {
 				typedmemclr(c.elemtype, ep)
 			}
+			// 通道ok，但没有值
 			return true, false
 		}
 	}
@@ -280,8 +281,10 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 		t0 = cputicks()
 	}
 
+	// 加锁
 	lock(&c.lock)
 
+	// channel已经关闭了
 	if c.closed != 0 {
 		if c.qcount == 0 {
 			if raceenabled {
@@ -291,6 +294,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 			if ep != nil {
 				typedmemclr(c.elemtype, ep)
 			}
+			// 相当于可以接收，但是接收值类型零值
 			return true, false
 		}
 		// The channel has been closed, but the channel's buffer have data.
