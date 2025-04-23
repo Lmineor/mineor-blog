@@ -240,5 +240,133 @@ func chanrecv1(c *hchan, elem unsafe.Pointer) {
 
 再来看chanrecv的具体实现
 ```go
+func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool) {
+	// raceenabled: don't need to check ep, as it is always on the stack
+	// or is new memory allocated by reflect.
 
+	if debugChan {
+		print("chanrecv: chan=", c, "\n")
+	}
+	// 当前channel为空,非阻塞场景直接返回，阻塞场景挂起当前goroutine
+	if c == nil {
+		if !block {
+			return
+		}
+		gopark(nil, nil, waitReasonChanReceiveNilChan, traceEvGoStop, 2)
+		throw("unreachable")
+	}
+
+	if !block && empty(c) {
+		// 非阻塞场景且发送队列为空
+		if atomic.Load(&c.closed) == 0 {
+			// 通过原子操作判断如果当前队列没有关闭，则直接返回false，false
+			return
+		}
+		// 再次检查发送队列是否为空（有可能在上面检查完为空之后队列关闭之间发送了数据）
+		if empty(c) {
+			// The channel is irreversibly closed and empty.
+			if raceenabled {
+				raceacquire(c.raceaddr())
+			}
+			if ep != nil {
+				typedmemclr(c.elemtype, ep)
+			}
+			return true, false
+		}
+	}
+
+	var t0 int64
+	if blockprofilerate > 0 {
+		t0 = cputicks()
+	}
+
+	lock(&c.lock)
+
+	if c.closed != 0 {
+		if c.qcount == 0 {
+			if raceenabled {
+				raceacquire(c.raceaddr())
+			}
+			unlock(&c.lock)
+			if ep != nil {
+				typedmemclr(c.elemtype, ep)
+			}
+			return true, false
+		}
+		// The channel has been closed, but the channel's buffer have data.
+	} else {
+		// Just found waiting sender with not closed.
+		if sg := c.sendq.dequeue(); sg != nil {
+			// Found a waiting sender. If buffer is size 0, receive value
+			// directly from sender. Otherwise, receive from head of queue
+			// and add sender's value to the tail of the queue (both map to
+			// the same buffer slot because the queue is full).
+			recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+			return true, true
+		}
+	}
+
+	if c.qcount > 0 {
+		// Receive directly from queue
+		qp := chanbuf(c, c.recvx)
+		if raceenabled {
+			racenotify(c, c.recvx, nil)
+		}
+		if ep != nil {
+			typedmemmove(c.elemtype, ep, qp)
+		}
+		typedmemclr(c.elemtype, qp)
+		c.recvx++
+		if c.recvx == c.dataqsiz {
+			c.recvx = 0
+		}
+		c.qcount--
+		unlock(&c.lock)
+		return true, true
+	}
+
+	if !block {
+		unlock(&c.lock)
+		return false, false
+	}
+
+	// no sender available: block on this channel.
+	gp := getg()
+	mysg := acquireSudog()
+	mysg.releasetime = 0
+	if t0 != 0 {
+		mysg.releasetime = -1
+	}
+	// No stack splits between assigning elem and enqueuing mysg
+	// on gp.waiting where copystack can find it.
+	mysg.elem = ep
+	mysg.waitlink = nil
+	gp.waiting = mysg
+	mysg.g = gp
+	mysg.isSelect = false
+	mysg.c = c
+	gp.param = nil
+	c.recvq.enqueue(mysg)
+	// Signal to anyone trying to shrink our stack that we're about
+	// to park on a channel. The window between when this G's status
+	// changes and when we set gp.activeStackChans is not safe for
+	// stack shrinking.
+	gp.parkingOnChan.Store(true)
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
+
+	// someone woke us up
+	if mysg != gp.waiting {
+		throw("G waiting list is corrupted")
+	}
+	gp.waiting = nil
+	gp.activeStackChans = false
+	if mysg.releasetime > 0 {
+		blockevent(mysg.releasetime-t0, 2)
+	}
+	success := mysg.success
+	gp.param = nil
+	mysg.c = nil
+	releaseSudog(mysg)
+	return true, success
+}
 ```
