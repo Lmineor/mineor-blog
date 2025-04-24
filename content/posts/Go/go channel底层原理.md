@@ -149,7 +149,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		panic(plainError("send on closed channel"))
 	}
 
-	// 如果有等待接收的队列不为空，那么把只直接发给队列中的sudog
+	// 如果有等待接收的队列不为空，那么把值直接发给队列中的sudog
 	if sg := c.recvq.dequeue(); sg != nil {
 		// Found a waiting receiver. We pass the value we want to send
 		// directly to the receiver, bypassing the channel buffer (if any).
@@ -158,13 +158,14 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 
 	if c.qcount < c.dataqsiz {
-		// Space is available in the channel buffer. Enqueue the element to send.
+		// 环形队列有空间
 		qp := chanbuf(c, c.sendx)
 		if raceenabled {
 			racenotify(c, c.sendx, nil)
 		}
 		typedmemmove(c.elemtype, qp, ep)
 		c.sendx++
+		// 环形队列转了一圈了,将发送索引置为0，从头开始
 		if c.sendx == c.dataqsiz {
 			c.sendx = 0
 		}
@@ -172,12 +173,12 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 		unlock(&c.lock)
 		return true
 	}
-
+	// 非阻塞场景，队列中没有空间，直接返回false
 	if !block {
 		unlock(&c.lock)
 		return false
 	}
-
+	// 以下是阻塞场景，尝试唤醒等待的g
 	// Block on the channel. Some receiver will complete our operation for us.
 	gp := getg()
 	mysg := acquireSudog()
@@ -192,14 +193,16 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	mysg.g = gp
 	mysg.isSelect = false
 	mysg.c = c
-	gp.waiting = mysg
+	gp.waiting = mysg //反向标记sudog
 	gp.param = nil
-	c.sendq.enqueue(mysg)
+	c.sendq.enqueue(mysg) // 将含有当前g指针和send元素的sudog结构体保存到sendq中等待唤醒
 	// Signal to anyone trying to shrink our stack that we're about
 	// to park on a channel. The window between when this G's status
 	// changes and when we set gp.activeStackChans is not safe for
 	// stack shrinking.
 	gp.parkingOnChan.Store(true)
+
+	// 挂起当前goroutine
 	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
 	// Ensure the value being sent is kept alive until the
 	// receiver copies it out. The sudog has a pointer to the
@@ -208,6 +211,8 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	KeepAlive(ep)
 
 	// someone woke us up.
+	//  解放了，当前g被唤醒了
+	// 确保之前当前g的waiting等于sudog
 	if mysg != gp.waiting {
 		throw("G waiting list is corrupted")
 	}
