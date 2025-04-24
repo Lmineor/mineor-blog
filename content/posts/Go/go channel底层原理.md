@@ -140,7 +140,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	if blockprofilerate > 0 {
 		t0 = cputicks()
 	}
-
+	// 需要上锁
 	lock(&c.lock)
 
 	if c.closed != 0 {
@@ -188,6 +188,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	}
 	// No stack splits between assigning elem and enqueuing mysg
 	// on gp.waiting where copystack can find it.
+	// 下面这一堆后面会用
 	mysg.elem = ep
 	mysg.waitlink = nil
 	mysg.g = gp
@@ -234,3 +235,328 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 	return true
 }
 ```
+
+在看接收操作
+```go
+// 实现代码中的 <- c 操作
+func chanrecv1(c *hchan, elem unsafe.Pointer) {
+	chanrecv(c, elem, true)
+}
+```
+
+再来看chanrecv的具体实现
+```go
+func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool) {
+	// raceenabled: don't need to check ep, as it is always on the stack
+	// or is new memory allocated by reflect.
+
+	if debugChan {
+		print("chanrecv: chan=", c, "\n")
+	}
+	// 当前channel为空,非阻塞场景直接返回，阻塞场景挂起当前goroutine
+	if c == nil {
+		if !block {
+			return
+		}
+		gopark(nil, nil, waitReasonChanReceiveNilChan, traceEvGoStop, 2)
+		throw("unreachable")
+	}
+
+	if !block && empty(c) {
+		// 非阻塞场景且发送队列为空
+		if atomic.Load(&c.closed) == 0 {
+			// 通过原子操作判断如果当前队列没有关闭，则直接返回false，false
+			return
+		}
+		// 再次检查发送队列是否为空（有可能在上面检查完为空之后和检查队列关闭之间发送了数据）
+		if empty(c) {
+			// The channel is irreversibly closed and empty.
+			if raceenabled {
+				raceacquire(c.raceaddr())
+			}
+			if ep != nil {
+				typedmemclr(c.elemtype, ep)
+			}
+			// 通道ok，但没有值
+			return true, false
+		}
+	}
+
+	var t0 int64
+	if blockprofilerate > 0 {
+		t0 = cputicks()
+	}
+
+	// 加锁
+	lock(&c.lock)
+
+	// channel已经关闭了
+	if c.closed != 0 {
+		if c.qcount == 0 {
+			if raceenabled {
+				raceacquire(c.raceaddr())
+			}
+			unlock(&c.lock)
+			if ep != nil {
+				typedmemclr(c.elemtype, ep)
+			}
+			// 相当于可以接收，但是接收值类型零值
+			return true, false
+		}
+		// The channel has been closed, but the channel's buffer have data.
+	} else {
+		// 从等待发送的goroutine队列弹出一个sudog，直接传递给接收者  sendq
+		if sg := c.sendq.dequeue(); sg != nil {
+			// Found a waiting sender. If buffer is size 0, receive value
+			// directly from sender. Otherwise, receive from head of queue
+			// and add sender's value to the tail of the queue (both map to
+			// the same buffer slot because the queue is full).
+			recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+			return true, true
+		}
+	}
+
+	// 环形队列中的元素个数大于0
+	if c.qcount > 0 {
+		// Receive directly from queue
+		qp := chanbuf(c, c.recvx)
+		if raceenabled {
+			racenotify(c, c.recvx, nil)
+		}
+		if ep != nil {
+			typedmemmove(c.elemtype, ep, qp)
+		}
+		typedmemclr(c.elemtype, qp)
+		c.recvx++
+		// 环形队列再次指向队列头部
+		if c.recvx == c.dataqsiz {
+			c.recvx = 0
+		}
+		c.qcount--
+		unlock(&c.lock)
+		return true, true
+	}
+
+	// 非阻塞场景，则直接返回
+	if !block {
+		unlock(&c.lock)
+		return false, false
+	}
+
+	// no sender available: block on this channel.
+	// 队列中没有元素，开始阻塞，没人发送数据
+	gp := getg()
+	mysg := acquireSudog()
+	mysg.releasetime = 0
+	if t0 != 0 {
+		mysg.releasetime = -1
+	}
+	// No stack splits between assigning elem and enqueuing mysg
+	// on gp.waiting where copystack can find it.
+	mysg.elem = ep
+	mysg.waitlink = nil
+	gp.waiting = mysg
+	mysg.g = gp
+	mysg.isSelect = false
+	mysg.c = c
+	gp.param = nil
+	// 将包含当前gorouine的sudog放到等待接收的队列中
+	c.recvq.enqueue(mysg)
+	// Signal to anyone trying to shrink our stack that we're about
+	// to park on a channel. The window between when this G's status
+	// changes and when we set gp.activeStackChans is not safe for
+	// stack shrinking.
+	gp.parkingOnChan.Store(true)
+	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
+
+	// 等待接收的队列被唤醒
+	if mysg != gp.waiting {
+		throw("G waiting list is corrupted")
+	}
+	gp.waiting = nil
+	gp.activeStackChans = false
+	if mysg.releasetime > 0 {
+		blockevent(mysg.releasetime-t0, 2)
+	}
+	success := mysg.success
+	gp.param = nil
+	mysg.c = nil
+	releaseSudog(mysg)
+	return true, success
+}
+```
+
+代码大概流程就是这样，考虑几种特殊场景
+## 几种场景
+
+### 场景1：有缓冲的通道，执行 c <- x这样的操作，如果c的队列已经满了
+
+c的队列已有数据，队列空间为4
+```bash
+c.队列 = [1,2,3,4]
+```
+
+这是goroutine `g1`执行`c <- 5`
+`c.队列`满了，`5`进不去
+
+查看chansend函数，可以发现如下代码
+```go
+...
+// mysg已经是包含当前操作数据sudog了
+c.sendq.enqueue(mysg)
+gp.parkingOnChan.Store(true)
+gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
+...
+```
+把mysg加入到发送队列中，然后让gmp调度挂起当前g1，那么什么时候能继续执行这个g1呢
+
+看chanrecv的函数，可以看到如下代码
+```go
+// sendq也就是说send的时候等待队列中数据
+if sg := c.sendq.dequeue(); sg != nil {
+	// Found a waiting sender. If buffer is size 0, receive value
+	// directly from sender. Otherwise, receive from head of queue
+	// and add sender's value to the tail of the queue (both map to
+	// the same buffer slot because the queue is full).
+	// buffer的大小为0（无缓冲队列）--> 直接sendq中取一个值
+	// buffer的大小不为0（有缓冲队列）--> 在sendq中去header的值，然后把sender加到等待队列的末尾）
+	recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+	return true, true
+}
+```
+
+某一个时刻有个`g2`执行了`<-c`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`recv(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个revc函数
+```go
+// 瞧一瞧recv函数
+// sg就是发送者
+func recv(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
+	if c.dataqsiz == 0 {
+		// 无缓冲chan
+		if raceenabled {
+			racesync(c, sg)
+		}
+		if ep != nil {
+			// copy data from sender
+			recvDirect(c.elemtype, sg, ep)
+		}
+	} else {
+		// 有缓冲的chan
+		// Queue is full. Take the item at the
+		// head of the queue. Make the sender enqueue
+		// its item at the tail of the queue. Since the
+		// queue is full, those are both the same slot.
+		qp := chanbuf(c, c.recvx)
+		if raceenabled {
+			racenotify(c, c.recvx, nil)
+			racenotify(c, c.recvx, sg)
+		}
+		// copy data from queue to receiver
+		if ep != nil {
+			typedmemmove(c.elemtype, ep, qp)
+		}
+		// copy data from sender to queue
+		typedmemmove(c.elemtype, qp, sg.elem)
+		c.recvx++
+		if c.recvx == c.dataqsiz {
+			c.recvx = 0
+		}
+		c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+		// 队列[2,3,4,5]
+	}
+	sg.elem = nil
+	// 还记得chansend中的这一堆操作吗
+	// mysg.elem = ep
+	// mysg.waitlink = nil
+	// mysg.g = gp
+	// mysg.isSelect = false
+	// mysg.c = c
+	// gp.waiting = mysg
+	// gp.param = nil
+	gp := sg.g // 当前阻塞的g1
+	unlockf()
+	gp.param = unsafe.Pointer(sg)
+	sg.success = true
+	if sg.releasetime != 0 {
+		sg.releasetime = cputicks()
+	}
+	// 标记当前的g1可以运行_Grunnable，等待被gmp调度（按照先放到p的本地队列中，如果满的话，这块就不赘述了，可以参考下go的gmp模型
+	goready(gp, skip+1)
+}
+```
+这样子就实现了`g1`调用`c <- x`满了以后接受者`g2`出现拯救了`g1`的过程
+
+### 场景2：有缓冲的通道，执行 `<- c`这样的操作，如果c的队列已经空了
+
+`g1`执行`<- c`但c的队列空了
+查看chanrecv函数可以发现这段代码
+```go
+// 将包含当前gorouine的sudog放到等待接收的队列中
+// mysg已经是包含当前需要接收数据的对象了
+c.recvq.enqueue(mysg)
+// Signal to anyone trying to shrink our stack that we're about
+// to park on a channel. The window between when this G's status
+// changes and when we set gp.activeStackChans is not safe for
+// stack shrinking.
+gp.parkingOnChan.Store(true)
+gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
+```
+把mysg加入到接收队列中，然后让[gmp](./gmp.md)调度挂起当前g1，那么什么时候能继续执行这个g1呢？
+同理，看chansend的函数，可以看到如下代码
+```go
+// 如果有等待接收的队列不为空，那么把只直接发给队列中的sudog
+if sg := c.recvq.dequeue(); sg != nil {
+	// Found a waiting receiver. We pass the value we want to send
+	// directly to the receiver, bypassing the channel buffer (if any).
+	// 从一堆等待的接收队列中取一个（head)
+	send(c, sg, ep, func() { unlock(&c.lock) }, 3)
+	return true
+}
+```
+某一个时刻有个`g2`执行了`c<-x`的操作，也就是说会走到上面的代码中，这时候`g1`就被唤醒了（肯定是`send(c, sg, ep, func() { unlock(&c.lock) }, 3)`把g1唤醒的，咱们瞧瞧这个send函数
+```go
+// 仔细瞧瞧send函数
+// sg 就是接收者
+func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
+	if raceenabled {
+		if c.dataqsiz == 0 {
+			racesync(c, sg)
+		} else {
+			// Pretend we go through the buffer, even though
+			// we copy directly. Note that we need to increment
+			// the head/tail locations only when raceenabled.
+			racenotify(c, c.recvx, nil)
+			racenotify(c, c.recvx, sg)
+			c.recvx++
+			if c.recvx == c.dataqsiz {
+				c.recvx = 0
+			}
+			c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+		}
+	}
+	if sg.elem != nil {
+		// 把需要发送的值发送给sg，也就是等待队列中的goroutine
+		sendDirect(c.elemtype, sg, ep)
+		sg.elem = nil
+	}
+	gp := sg.g // 也就是g1
+	unlockf()
+	gp.param = unsafe.Pointer(sg)
+	sg.success = true
+	if sg.releasetime != 0 {
+		sg.releasetime = cputicks()
+	}
+	// 也是通过goready把g1唤醒了
+	goready(gp, skip+1)
+}
+```
+这样子就实现了`g1`调用`<- c`但c的队列为空以后发送者`g2`出现拯救了`g1`的过程
+
+
+### 场景3：无缓冲的通道，执行 `c <- x`这样的操作
+和场景1类似，只是在`g2`执行`recv`的时候直接把`g1`的`x`复制给了`g2，后续唤醒流程一样
+
+### 场景4：无缓冲的通道，执行 `<-c`这样的操作
+和场景2类似，只是在`g2`执行`send`的时候直接把`g2`的`x`复制给了`g1`，后续唤醒流程一样
+
+
+综上，就是go语言的chan的底层原理了，谷歌这帮人太6了
