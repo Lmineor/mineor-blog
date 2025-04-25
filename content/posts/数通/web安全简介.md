@@ -33,3 +33,50 @@ Web安全主要是指在互联网环境下，保障Web应用程序、网站以�
 - **用户教育和培训**：提高用户的安全意识，教育用户如何识别和防范常见的网络攻击。
 
 Web安全是一个复杂而重要的领域，需要网站运营者、开发人员和用户共同努力，才能有效保障Web环境的安全。
+
+### 5. web安全威胁举例
+
+#### SQL注入
+
+SQL注入（SQL Injection）是一种常见的网络攻击手段，攻击者通过在输入字段或请求中注入恶意SQL语句，操纵数据库执行意图之外的操作
+
+其目标通常是：
+- 窃取敏感数据
+- 绕过身份认证
+- 修改、删除数据库内容
+- 执行系统命令等
+
+SQL注入的工作原理
+
+- **输入验证不足**：当web应用程序没有正确验证用户输入时，攻击者可以在输入字段中插入SQL代码
+- **拼接SQL语句**： 应用程序后端通常将用户输入与SQL查询拼接在一起，形成完整的数据库查询语句
+- **执行恶意SQL**： 如果应用程序没有对输入进行适当的清理或转义，恶意SQL代码将被数据库服务器执行
+- **数据泄露或破坏**： 攻击者可以利用SQL注入来查询、修改或删除数据库中的数据，或者执行数据库管理的系统命令
+
+1、基础型 SQL 注入
+直接将恶意 SQL 代码嵌入用户输入中，并影响查询逻辑。
+
+输入用户名：admin' OR '1'='1
+输入密码：anything
+执行的 SQL 查询：
+
+`SELECT * FROM users WHERE username = 'admin' OR '1'='1' AND password = 'anything';`
+
+结果：
+
+`OR '1'='1'` 总为 true，可以绕过验证。
+
+2、UNION 查询注入
+通过 UNION 将攻击者构造的查询结果与合法查询结果合并，从而获取敏感数据。
+
+输入：
+
+`' UNION SELECT null, username, password FROM users --`
+
+执行的 SQL 查询：
+
+`SELECT id, name FROM products WHERE id = '' UNION SELECT null, username, password FROM users --';`
+
+结果：
+
+将 users 表的 username 和 password 数据作为结果返回。
