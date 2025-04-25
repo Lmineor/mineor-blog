@@ -387,7 +387,7 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 ```
 
 代码大概流程就是这样，考虑几种特殊场景
-## 几种场景
+# 几种场景
 
 ### 场景1：有缓冲的通道，执行 c <- x这样的操作，如果c的队列已经满了
 
@@ -558,5 +558,84 @@ func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 ### 场景4：无缓冲的通道，执行 `<-c`这样的操作
 和场景2类似，只是在`g2`执行`send`的时候直接把`g2`的`x`复制给了`g1`，后续唤醒流程一样
 
+# closechan的实现
+
+```go
+func closechan(c *hchan) {
+
+	if c == nil {
+		panic(plainError("close of nil channel"))
+	}
+
+	lock(&c.lock)
+	if c.closed != 0 {
+		unlock(&c.lock)
+		panic(plainError("close of closed channel"))
+	}
+
+	if raceenabled {
+		callerpc := getcallerpc()
+		racewritepc(c.raceaddr(), callerpc, abi.FuncPCABIInternal(closechan))
+		racerelease(c.raceaddr())
+	}
+
+	c.closed = 1 // 标志位
+
+	var glist gList
+
+	// 释放所有等待接收的goroutine
+	for {
+		sg := c.recvq.dequeue()
+		if sg == nil {
+			break
+		}
+		if sg.elem != nil {
+			typedmemclr(c.elemtype, sg.elem)
+			sg.elem = nil
+		}
+		if sg.releasetime != 0 {
+			sg.releasetime = cputicks()
+		}
+		gp := sg.g
+		gp.param = unsafe.Pointer(sg)
+		sg.success = false
+		if raceenabled {
+			raceacquireg(gp, c.raceaddr())
+		}
+		// 将接受队列中等待的goroutine加入到glist中
+		glist.push(gp)
+	}
+
+
+	// 释放所有等待写入的goroutine（panic：不能向已经关闭的channel中写）
+	for {
+		sg := c.sendq.dequeue()
+		if sg == nil {
+			break
+		}
+		sg.elem = nil
+		if sg.releasetime != 0 {
+			sg.releasetime = cputicks()
+		}
+		gp := sg.g
+		gp.param = unsafe.Pointer(sg)
+		sg.success = false
+		if raceenabled {
+			raceacquireg(gp, c.raceaddr())
+		}
+		glist.push(gp)
+	}
+	unlock(&c.lock)
+
+	// 唤醒所有的g
+	for !glist.empty() {
+		gp := glist.pop()
+		gp.schedlink = 0
+		goready(gp, 3)
+	}
+}
+```
 
 综上，就是go语言的chan的底层原理了，谷歌这帮人太6了
+
+ 
