@@ -8,4 +8,11 @@ tags:
 
 UDP是一个简单的面向数据报的运输层协议
 UDP封装如图所示
-![UDP](static/network/udp1.png)
+![UDP](static/images/network/udp1.png)
+
+UDP不提供可靠性：他把应用程序传给IP层的数据发送出去，但是并不保证他们能到达目的地。
+
+# UDP首部
+
+![udp首部](static/images/network/udp2.png)
+端口号表示
