@@ -7,3 +7,5 @@ tags:
 ---
 
 UDP是一个简单的面向数据报的运输层协议
+UDP封装如图所示
+![UDP](static/network/udp1.png)
