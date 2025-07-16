@@ -5,79 +5,37 @@ draft: false
 tags:
   - 数通
 ---
-HTTP长连接和TCP长连接是网络通信中两个不同层次的概念，虽然都涉及“长连接”，但它们的实现层级、作用机制和应用场景有显著区别，同时也存在一定的联系。以下是详细对比：
+面试回答（背 30 秒版）
 
----
+一、TCP Keepalive 的三个核心系统参数  
+| 参数 | 含义 | 默认值（Linux） |
+|---|---|---|
+| `net.ipv4.tcp_keepalive_time` | 连接空闲多久后开始发送探测包 | 7200 秒 |
+| `net.ipv4.tcp_keepalive_intvl` | 每次探测包之间的间隔 | 75 秒 |
+| `net.ipv4.tcp_keepalive_probes` | 连续探测几次无响应后判定连接失效 | 9 次 |
 
-### **核心区别**
-| **维度**   | **HTTP长连接（HTTP Keep-Alive）**         | **TCP长连接（TCP Persistent Connection）** |
-| -------- | ------------------------------------ | ------------------------------------- |
-| **协议层级** | **应用层**（HTTP协议特性）                    | **传输层**（TCP协议特性）                      |
-| **作用目标** | 复用单个TCP连接传输多个HTTP请求/响应，减少握手开销        | 保持TCP连接长时间活跃，避免频繁建立/断开连接              |
-| **生命周期** | 由HTTP头部（如`Connection: keep-alive`）控制 | 由TCP协议栈的保活机制（如`SO_KEEPALIVE`）控制       |
-| **默认行为** | HTTP/1.1默认启用，HTTP/1.0需显式声明           | TCP协议本身无“长连接”概念，需应用层或系统配置实现           |
-| **典型场景** | 网页加载（同一页面内多个资源请求）                    | 实时通信（如WebSocket、数据库连接、消息队列）           |
-
----
-
-### **关键联系**
-1. **依赖关系**  
-   - HTTP长连接**基于TCP长连接实现**：HTTP协议本身是无状态的，其长连接功能需要底层TCP连接保持活跃才能复用。
-   - 例如：浏览器通过一个TCP连接发送多个HTTP请求（如HTML、CSS、JS），前提是该TCP连接未被关闭。
-
-2. **配置协同**  
-   - 若TCP连接因超时或异常断开，HTTP长连接会失效（需重新建立TCP连接）。
-   - 可通过调整TCP的`keepalive`参数（如时间、探测次数）来间接支持HTTP长连接的稳定性。
-
-3. **性能优化**  
-   - 两者共同目标是减少频繁建立连接的开销（如TCP三次握手、TLS握手），提升传输效率。
-
----
-
-### **工作机制对比**
-#### **HTTP长连接**
-1. **客户端**发送请求时携带头部：  
-```text
-   Connection: keep-alive
+查看/修改示例  
+```bash
+sysctl net.ipv4.tcp_keepalive_time      # 查看
+sysctl -w net.ipv4.tcp_keepalive_time=600
 ```
-2. **服务器**响应后不立即关闭连接，允许后续请求复用该连接。  
-3. **超时关闭**：若空闲时间超过阈值（如Apache默认5秒），服务器主动断开连接。
 
-#### **TCP长连接**
-1. **保活机制**：通过TCP的`SO_KEEPALIVE`选项（默认2小时发送探测包）。  
-2. **应用层心跳**：如WebSocket的`ping/pong`帧、数据库连接池的定期心跳查询。  
-3. **手动维护**：需应用代码显式管理连接生命周期（如不调用`close()`）。
+代码级设置  
+```c
+setsockopt(fd, SOL_TCP, TCP_KEEPIDLE,  &600,  sizeof(int)); // 对应 time
+setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &75,   sizeof(int)); // 对应 intvl
+setsockopt(fd, SOL_TCP, TCP_KEEPCNT,   &9,    sizeof(int)); // 对应 probes
+```
 
----
+二、TCP Keepalive vs HTTP Keep-Alive  
 
-### **实际案例**
-- **HTTP长连接**  
-  - 浏览器加载知乎首页：通过一个TCP连接顺序请求HTML、CSS、JS、图片（HTTP/1.1默认复用）。  
-  - **限制**：HTTP/1.1的队头阻塞（HOL）问题，单个连接中的请求必须串行。
+| 维度 | TCP Keepalive | HTTP Keep-Alive |
+|---|---|---|
+| 所在层级 | 传输层（内核态） | 应用层（用户态） |
+| 目的 | 检测“死”连接并自动回收 | 复用同一 TCP 连接发多个 HTTP 请求 |
+| 触发条件 | 连接空闲超过 `tcp_keepalive_time` | 一次 HTTP 事务结束后不立刻 `close` |
+| 控制方式 | 内核参数 + `SO_KEEPALIVE` | HTTP 头 `Connection: Keep-Alive` 或 `close` |
+| 典型参数 | 如上三参数 | Nginx: `keepalive_timeout`；Gunicorn: `--keep-alive` |
 
-- **TCP长连接**  
-  - **微信消息推送**：客户端与服务器维持TCP长连接，通过心跳保活，实时接收消息。  
-  - **MySQL连接池**：应用服务器维护多个TCP长连接，避免每次查询重新握手。
-
----
-
-### **常见误区**
-1. **“HTTP长连接 ≠ WebSocket”**  
-   - WebSocket是**基于TCP的全双工协议**，连接一旦建立可长期双向通信（不依赖HTTP长连接）。  
-   - HTTP长连接仍遵循请求-响应模式，仅是复用TCP连接。
-
-2. **“TCP长连接一定高效”**  
-   - 长连接占用服务器资源（如内存、文件描述符），需平衡连接数量和性能。
-
----
-
-### **选择建议**
-- **用HTTP长连接**：短周期、高频次请求（如API调用、静态资源加载）。  
-- **用TCP长连接**：长周期、实时性要求高的场景（如在线游戏、金融行情推送）。  
-
----
-
-### **总结**
-- **层级不同**：HTTP长连接是应用层优化，TCP长连接是传输层基础能力。  
-- **协作关系**：HTTP长连接依赖TCP长连接，但后者不依赖前者。  
-- **现代协议**：HTTP/2的多路复用、HTTP/3的QUIC协议进一步优化了长连接的管理效率。
+一句话总结  
+“TCP Keepalive 是内核的‘心跳保活’，HTTP Keep-Alive 是应用的‘连接复用’，两者名字像，但做的事完全不同。”
