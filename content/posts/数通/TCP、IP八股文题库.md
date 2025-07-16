@@ -34,8 +34,8 @@
 ### 3. TCP/IP 协议（10 题）
 21. [**三次握手** 各发送哪些标志位？为何初始序列号 ISN 要随机？](content/posts/数通/三次握手、四次挥手、同时打开、关闭、半关闭)
 22. [**四次挥手** TIME_WAIT 2MSL 的作用？如何避免？](content/posts/数通/三次握手、四次挥手、同时打开、关闭、半关闭)
-23. **TCP 拥塞控制** 四个阶段？CUBIC 与 BBR 核心思想？  
-24. **TCP Keepalive** 三个系统参数？与 HTTP Keep-Alive 区别？  
+23. [**TCP 拥塞控制** 四个阶段？CUBIC 与 BBR 核心思想？](content/posts/数通/TCP协议)
+24. [**TCP Keepalive** 三个系统参数？与 HTTP Keep-Alive 区别？](content/posts/数通/http长连接和tcp长连接的区别与联系)
 25. **滑动窗口** 与 **拥塞窗口** 关系？  
 26. **TCP_NODELAY** 与 **TCP_CORK** 使用场景？  
 27. **Nagle 算法** 触发条件？如何关闭？  
