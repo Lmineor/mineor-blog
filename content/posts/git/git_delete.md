@@ -1,13 +1,9 @@
 ---
-title: "git远端删除.idea等本地文件夹"
-date: 2023-01-01
+title: git_delete
+date: 星期四, 七月 17日 2025, 2:15:13 下午
 draft: false
-tags : [                    # 文章所属标签
-    "Git",
-]
-categories : [              # 文章所属标签
-    "技术",
-]
+tags:
+  - Git
 ---
 
 如果不配置.gitignore的文件，带push代码的时候就会把一写不必要的文件push到远程仓库，如.idea文件。如果不小心出现此文件在远程仓库可以通过一下步骤delete此文件：

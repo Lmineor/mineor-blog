@@ -1,3 +1,10 @@
+---
+title: TCP UDP区别
+date: 星期四, 七月 17日 2025, 2:17:01 下午
+draft: true
+tags:
+  - 数通
+---
 # TCP UDP区别
 
 | 1.连接        | 面向连接        | 面向非连接      |

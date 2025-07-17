@@ -1,3 +1,10 @@
+---
+title: vxlan报文格式
+date: 星期四, 七月 17日 2025, 2:17:10 下午
+draft: true
+tags:
+  - 数通
+---
 VXLAN 报文格式要点（面试速答）
 
 1. VXLAN Header  

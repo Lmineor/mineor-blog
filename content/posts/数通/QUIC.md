@@ -1,3 +1,10 @@
+---
+title: QUIC
+date: 星期四, 七月 17日 2025, 2:16:53 下午
+draft: true
+tags:
+  - 数通
+---
 QUIC（Quick UDP Internet Connections）是 Google 2013 年提出、IETF 2022 年正式标准化的 **新一代传输层协议**，它把传统“TCP+TLS”两层栈压缩成 **“UDP+QUIC+TLS1.3”** 一层，专为 **更快、更稳、更安全** 的互联网而生。
 
 一句话定位  
