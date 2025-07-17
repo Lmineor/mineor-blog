@@ -1,6 +1,6 @@
 ---
 title: LVS三种工作模式详解（NAT/DR/TUN）
-date: 星期四, 七月 17日 2025, 3:48:32 下午
+date: 2025-07-17
 draft: true
 tags:
 ---

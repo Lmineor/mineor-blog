@@ -1,6 +1,6 @@
 ---
 title: QUIC
-date: 星期四, 七月 17日 2025, 2:16:53 下午
+date: 2025-07-17
 draft: true
 tags:
   - 数通
