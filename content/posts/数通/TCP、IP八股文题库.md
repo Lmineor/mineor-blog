@@ -46,8 +46,8 @@
 ---
 
 ### 4. 应用层/高并发（10 题）
-31. [**HTTP/1.1 与 HTTP/2** 最大区别？HPACK 压缩原理](content/posts/数通/HTTP 1.0、1.1、2.0与3.0的区别与联系)
-32. **HTTP 状态码 301、302、307、308** 语义差异？  
+31. [**HTTP/1.1 与 HTTP/2** 最大区别](content/posts/数通/HTTP_1._1.1_2.0与3.0的区别与联系)、[ HPACK 压缩原理](content/posts/数通/HPACK)
+32. [**HTTP 状态码 301、302、307、308** 语义差异](content/posts/数通/HTTP状态码)
 33. **Cookie 与 Session** 实现机制？如何防止会话固定攻击？  
 34. **WebSocket 握手** 头字段？如何兼容 80/443？  
 35. **Nginx 11 个处理阶段** 顺序？access 阶段为何放 rewrite 后？  
