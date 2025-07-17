@@ -1,6 +1,6 @@
 ---
 title: http长连接和tcp长连接的区别与联系
-date: 2025-04-20
+date: 星期四, 七月 17日 2025, 2:25:01 下午
 draft: false
 tags:
   - 数通
@@ -8,6 +8,7 @@ tags:
 面试回答（背 30 秒版）
 
 一、TCP Keepalive 的三个核心系统参数  
+
 | 参数 | 含义 | 默认值（Linux） |
 |---|---|---|
 | `net.ipv4.tcp_keepalive_time` | 连接空闲多久后开始发送探测包 | 7200 秒 |
