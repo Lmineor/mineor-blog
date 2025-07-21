@@ -1,6 +1,6 @@
 ---
 title: http长连接和tcp长连接的区别与联系
-date: 星期四, 七月 17日 2025, 2:25:01 下午
+date: 2025-07-21
 draft: false
 tags:
   - 数通
