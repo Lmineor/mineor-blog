@@ -1,6 +1,6 @@
 ---
-title: Table
-date: 星期四, 七月 17日 2025, 2:57:32 下午
+title: iptables
+date: 2025-07-21
 draft: true
 tags:
   - 数通

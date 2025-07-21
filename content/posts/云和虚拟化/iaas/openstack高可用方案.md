@@ -1,5 +1,5 @@
 ---
-title: "OpenStack高可用方案--haproxy+Keepalived"
+title: openstack高可用方案
 date: 2025-04-17
 draft: false
 tags : [                    # 文章所属标签

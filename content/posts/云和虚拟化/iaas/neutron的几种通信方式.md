@@ -1,5 +1,5 @@
 ---
-title: "一文说明白neutron用的几种通信方式"
+title: neutron的几种通信方式
 date: 2024-12-19
 draft: false
 tags : [                    # 文章所属标签

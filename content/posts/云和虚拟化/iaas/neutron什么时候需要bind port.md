@@ -1,5 +1,5 @@
 ---
-title: "neutron什么需要bind port"
+title: neutron什么时候需要bind port
 date: 2024-12-25
 draft: false
 tags : [                    # 文章所属标签
