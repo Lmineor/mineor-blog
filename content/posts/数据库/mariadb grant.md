@@ -17,6 +17,6 @@ $ mysql -u root -p
 MariaDB [(none)]> CREATE DATABASE keystone;
 # Grant proper access to the keystone database:
 
-GRANT ALL PRIVILEGES ON yong.* TO 'yong'@'localhost' IDENTIFIED BY '123456';
-GRANT ALL PRIVILEGES ON yong.* TO 'yong'@'%' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON robot.* TO 'yong'@'localhost' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON robot.* TO 'yong'@'%' IDENTIFIED BY '123456';
 ```
