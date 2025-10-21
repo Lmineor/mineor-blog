@@ -1,5 +1,5 @@
 ---
-title: "Mariadb Grant命令"
+title: mariadb grant
 date: 2023-11-26
 draft: false
 tags : [                    # 文章所属标签
