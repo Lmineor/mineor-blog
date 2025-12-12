@@ -1,6 +1,6 @@
 ---
 title: git_delete
-date: 星期四, 七月 17日 2025, 2:15:13 下午
+date: 2025-07-17
 draft: false
 tags:
   - Git
