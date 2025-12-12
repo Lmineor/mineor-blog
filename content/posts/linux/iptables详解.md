@@ -1,6 +1,6 @@
 ---
 title: iptables工作流程
-date: 星期四, 七月 17日 2025, 2:17:36 下午
+date: 2025-07-17
 draft: false
 tags : [                    # 文章所属标签
     "Linux",
