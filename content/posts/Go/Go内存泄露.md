@@ -31,11 +31,17 @@ string相比于切片少了一个容量的cap字段，可以把string当成一�
 常见的内存泄露场景，go101进行了讨论，总结了如下几种：
 
 [Kind of memory leaking caused by substrings](https://go101.org/article/memory-leaking.html)
+
 [Kind of memory leaking caused by subslices](https://go101.org/article/memory-leaking.html)
+
 [Kind of memory leaking caused by not resetting pointers in lost slice elements](https://go101.org/article/memory-leaking.html)
+
 [Real memory leaking caused by hanging goroutines](https://go101.org/article/memory-leaking.html)
+
 [real memory leadking caused by not stopping time.Ticker values which are not used any more](https://go101.org/article/memory-leaking.html)
+
 [Real memory leaking caused by using finalizers improperly](https://go101.org/article/memory-leaking.html)
+
 [Kind of resource leaking by deferring function calls](https://go101.org/article/memory-leaking.html)
 
 
