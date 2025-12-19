@@ -31,11 +31,17 @@ string相比于切片少了一个容量的cap字段，可以把string当成一�
 常见的内存泄露场景，go101进行了讨论，总结了如下几种：
 
 [Kind of memory leaking caused by substrings](https://go101.org/article/memory-leaking.html)
+
 [Kind of memory leaking caused by subslices](https://go101.org/article/memory-leaking.html)
+
 [Kind of memory leaking caused by not resetting pointers in lost slice elements](https://go101.org/article/memory-leaking.html)
+
 [Real memory leaking caused by hanging goroutines](https://go101.org/article/memory-leaking.html)
+
 [real memory leadking caused by not stopping time.Ticker values which are not used any more](https://go101.org/article/memory-leaking.html)
+
 [Real memory leaking caused by using finalizers improperly](https://go101.org/article/memory-leaking.html)
+
 [Kind of resource leaking by deferring function calls](https://go101.org/article/memory-leaking.html)
 
 
@@ -67,137 +73,137 @@ func countTarget(nums [1000000]int, target int) int {
 **互斥锁未释放**
 
 ```text
- 1//协程拿到锁未释放，其他协程获取锁会阻塞
- 2func mutexTest() {
- 3    mutex := sync.Mutex{}
- 4    for i := 0; i < 10; i++ {
- 5        go func() {
- 6            mutex.Lock()
- 7            fmt.Printf("%d goroutine get mutex", i)
- 8      //模拟实际开发中的操作耗时
- 9            time.Sleep(100 * time.Millisecond)
-10        }()
-11    }
-12    time.Sleep(10 * time.Second)
-13}
+ //协程拿到锁未释放，其他协程获取锁会阻塞
+ func mutexTest() {
+     mutex := sync.Mutex{}
+     for i := 0; i < 10; i++ {
+         go func() {
+             mutex.Lock()
+             fmt.Printf("%d goroutine get mutex", i)
+       //模拟实际开发中的操作耗时
+             time.Sleep(100 * time.Millisecond)
+        }()
+    }
+    time.Sleep(10 * time.Second)
+}
 ```
 
 **死锁**
 
 ```text
- 1func mutexTest() {
- 2    m1, m2 := sync.Mutex{}, sync.RWMutex{}
- 3  //g1得到锁1去获取锁2
- 4    go func() {
- 5        m1.Lock()
- 6        fmt.Println("g1 get m1")
- 7        time.Sleep(1 * time.Second)
- 8        m2.Lock()
- 9        fmt.Println("g1 get m2")
-10    }()
-11    //g2得到锁2去获取锁1
-12    go func() {
-13        m2.Lock()
-14        fmt.Println("g2 get m2")
-15        time.Sleep(1 * time.Second)
-16        m1.Lock()
-17        fmt.Println("g2 get m1")
-18    }()
-19  //其余协程获取锁都会失败
-20    go func() {
-21        m1.Lock()
-22        fmt.Println("g3 get m1")
-23    }()
-24    time.Sleep(10 * time.Second)
-25}
+ func mutexTest() {
+     m1, m2 := sync.Mutex{}, sync.RWMutex{}
+   //g1得到锁1去获取锁2
+     go func() {
+         m1.Lock()
+         fmt.Println("g1 get m1")
+         time.Sleep(1 * time.Second)
+         m2.Lock()
+         fmt.Println("g1 get m2")
+    }()
+    //g2得到锁2去获取锁1
+    go func() {
+        m2.Lock()
+        fmt.Println("g2 get m2")
+        time.Sleep(1 * time.Second)
+        m1.Lock()
+        fmt.Println("g2 get m1")
+    }()
+  //其余协程获取锁都会失败
+    go func() {
+        m1.Lock()
+        fmt.Println("g3 get m1")
+    }()
+    time.Sleep(10 * time.Second)
+}
 ```
 
 **空channel**
 
 ```text
- 1func channelTest() {
- 2  //声明未初始化的channel读写都会阻塞
- 3    var c chan int
- 4  //向channel中写数据
- 5    go func() {
- 6        c <- 1
- 7        fmt.Println("g1 send succeed")
- 8        time.Sleep(1 * time.Second)
- 9    }()
-10  //从channel中读数据
-11    go func() {
-12        <-c
-13        fmt.Println("g2 receive succeed")
-14        time.Sleep(1 * time.Second)
-15    }()
-16    time.Sleep(10 * time.Second)
-17}
+func channelTest() {
+  //声明未初始化的channel读写都会阻塞
+    var c chan int
+  //向channel中写数据
+    go func() {
+        c <- 1
+        fmt.Println("g1 send succeed")
+        time.Sleep(1 * time.Second)
+    }()
+  //从channel中读数据
+    go func() {
+        <-c
+        fmt.Println("g2 receive succeed")
+        time.Sleep(1 * time.Second)
+    }()
+    time.Sleep(10 * time.Second)
+}
 ```
 
 **能出不能进**
 
 ```text
- 1func channelTest() {
- 2    var c = make(chan int)
- 3  //10个协程向channel中写数据
- 4    for i := 0; i < 10; i++ {
- 5        go func() {
- 6            c <- 1
- 7            fmt.Println("g1 send succeed")
- 8            time.Sleep(1 * time.Second)
- 9        }()
-10    }
-11  //1个协程丛channel中读数据
-12    go func() {
-13        <-c
-14        fmt.Println("g2 receive succeed")
-15        time.Sleep(1 * time.Second)
-16    }()
-17  //会有写的9个协程阻塞得不到释放
-18    time.Sleep(10 * time.Second)
-19}
+func channelTest() {
+    var c = make(chan int)
+  //10个协程向channel中写数据
+    for i := 0; i < 10; i++ {
+        go func() {
+            c <- 1
+            fmt.Println("g1 send succeed")
+            time.Sleep(1 * time.Second)
+        }()
+    }
+  //1个协程丛channel中读数据
+    go func() {
+        <-c
+        fmt.Println("g2 receive succeed")
+        time.Sleep(1 * time.Second)
+    }()
+  //会有写的9个协程阻塞得不到释放
+    time.Sleep(10 * time.Second)
+}
 ```
 
 **能进不能出**
 
 ```text
- 1func channelTest() {
- 2    var c = make(chan int)
- 3  //10个协程向channel中读数据
- 4    for i := 0; i < 10; i++ {
- 5        go func() {
- 6            <- c
- 7            fmt.Println("g1 receive succeed")
- 8            time.Sleep(1 * time.Second)
- 9        }()
-10    }
-11  //1个协程丛channel写读数据
-12    go func() {
-13        c <- 1
-14        fmt.Println("g2 send succeed")
-15        time.Sleep(1 * time.Second)
-16    }()
-17  //会有读的9个协程阻塞得不到释放
-18    time.Sleep(10 * time.Second)
-19}
+func channelTest() {
+    var c = make(chan int)
+  //10个协程向channel中读数据
+    for i := 0; i < 10; i++ {
+        go func() {
+            <- c
+            fmt.Println("g1 receive succeed")
+            time.Sleep(1 * time.Second)
+        }()
+    }
+  //1个协程丛channel写读数据
+    go func() {
+        c <- 1
+        fmt.Println("g2 send succeed")
+        time.Sleep(1 * time.Second)
+    }()
+  //会有读的9个协程阻塞得不到释放
+    time.Sleep(10 * time.Second)
+}
 ```
 ## time.Ticker未及时调用stop导致
 
 time.Ticker是每隔指定的时间就会向通道内写数据。作为循环触发器，必须调用stop方法才会停止，从而被GC掉，否则会一直占用内存空间。
 
 ```text
- 1func tickerTest() {
- 2    //定义一个ticker，每隔500毫秒触发
- 3    ticker := time.NewTicker(time.Second * 1)
- 4    //Ticker触发
- 5    go func() {
- 6        for t := range ticker.C {
- 7            fmt.Println("ticker被触发", t)
- 8        }
- 9    }()
-10
-11    time.Sleep(time.Second * 10)
-12    //停止ticker
-13    ticker.Stop()
-14}
+func tickerTest() {
+    //定义一个ticker，每隔500毫秒触发
+    ticker := time.NewTicker(time.Second * 1)
+    //Ticker触发
+    go func() {
+        for t := range ticker.C {
+            fmt.Println("ticker被触发", t)
+        }
+    }()
+
+    time.Sleep(time.Second * 10)
+    //停止ticker
+    ticker.Stop()
+}
 ```
